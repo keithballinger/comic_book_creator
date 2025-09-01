@@ -108,8 +108,8 @@ class TestProcessingPipeline:
             f.write("PAGE 1\n\nPANEL 1\nTest panel\n")
         
         # Mock parser and validator
-        pipeline.parser.parse_file = MagicMock(return_value=test_script)
-        pipeline.validator.validate = MagicMock(
+        pipeline.parser.parse_script = MagicMock(return_value=test_script)
+        pipeline.validator.validate_script = MagicMock(
             return_value=ValidationResult(is_valid=True)
         )
         
@@ -129,7 +129,7 @@ class TestProcessingPipeline:
         # Mock invalid script
         invalid_script = ComicScript(title="Invalid")
         pipeline.parser.parse_file = MagicMock(return_value=invalid_script)
-        pipeline.validator.validate = MagicMock(
+        pipeline.validator.validate_script = MagicMock(
             return_value=ValidationResult(
                 is_valid=False,
                 errors=["No pages found"]
@@ -147,8 +147,8 @@ class TestProcessingPipeline:
         script_path = Path(temp_output_dir) / "test_script.txt"
         script_path.touch()
         
-        pipeline.parser.parse_file = MagicMock(return_value=test_script)
-        pipeline.validator.validate = MagicMock(
+        pipeline.parser.parse_script = MagicMock(return_value=test_script)
+        pipeline.validator.validate_script = MagicMock(
             return_value=ValidationResult(is_valid=True)
         )
         
@@ -369,7 +369,7 @@ class TestProcessingPipeline:
         script_path.touch()
         
         # Make parser raise an exception
-        pipeline.parser.parse_file = MagicMock(
+        pipeline.parser.parse_script = MagicMock(
             side_effect=Exception("Parse error")
         )
         

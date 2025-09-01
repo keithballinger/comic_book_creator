@@ -84,10 +84,10 @@ class ProcessingPipeline:
         try:
             # Parse script
             logger.info(f"Parsing script: {script_path}")
-            script = self.parser.parse_file(script_path)
+            script = self.parser.parse_script(script_path)
             
             # Validate script
-            validation_result = self.validator.validate(script)
+            validation_result = self.validator.validate_script(script)
             if not validation_result.is_valid:
                 logger.error(f"Script validation failed: {validation_result.get_message()}")
                 return ProcessingResult(
