@@ -4,6 +4,7 @@ from .script import (
     Caption,
     ComicScript,
     Dialogue,
+    DialogueType,
     Page,
     Panel,
     PanelType,
@@ -23,6 +24,7 @@ from .generation import (
 __all__ = [
     # Script models
     "PanelType",
+    "DialogueType",
     "Dialogue",
     "Caption",
     "SoundEffect",

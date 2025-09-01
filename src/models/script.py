@@ -13,12 +13,21 @@ class PanelType(Enum):
     SPLASH = "splash"
 
 
+class DialogueType(Enum):
+    """Types of dialogue presentation."""
+    BALLOON = "balloon"  # Standard speech balloon
+    THOUGHT = "thought"  # Thought bubble
+    WHISPER = "whisper"  # Whispered/quiet speech
+    SHOUT = "shout"     # Shouting/yelling
+
+
 @dataclass
 class Dialogue:
     """Dialogue spoken by a character."""
     character: str
     text: str
     emotion: Optional[str] = None
+    type: DialogueType = DialogueType.BALLOON
     
     def __post_init__(self):
         """Validate dialogue data."""
@@ -39,7 +48,7 @@ class Caption:
         """Validate caption data."""
         if not self.text:
             raise ValueError("Caption must have text")
-        valid_positions = ["top", "bottom", "left", "right", "center"]
+        valid_positions = ["top", "bottom", "left", "right", "center", "middle"]
         if self.position not in valid_positions:
             raise ValueError(f"Caption position must be one of {valid_positions}")
 
@@ -56,7 +65,7 @@ class SoundEffect:
         """Validate sound effect data."""
         if not self.text:
             raise ValueError("Sound effect must have text")
-        valid_sizes = ["small", "medium", "large", "extra-large"]
+        valid_sizes = ["small", "medium", "large", "extra-large", "huge"]
         if self.size not in valid_sizes:
             raise ValueError(f"Sound effect size must be one of {valid_sizes}")
 

@@ -90,7 +90,7 @@ class TestSoundEffect:
             SoundEffect(text="")
         
         with pytest.raises(ValueError, match="size"):
-            SoundEffect(text="BANG", size="huge")
+            SoundEffect(text="BANG", size="gigantic")
 
 
 class TestPanel:
