@@ -88,9 +88,10 @@ generation:
     
     def test_missing_api_key(self):
         """Test validation error when API key is missing."""
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="GEMINI_API_KEY"):
-                load_config()
+        with patch('src.config.loader.load_dotenv'):  # Prevent loading .env file
+            with patch.dict(os.environ, {}, clear=True):
+                with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+                    load_config()
     
     def test_invalid_panel_size(self):
         """Test validation of panel size."""
@@ -140,9 +141,10 @@ output:
             temp_path = f.name
             
         try:
-            with patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
-                with pytest.raises(ValueError, match="DPI must be positive"):
-                    load_config(temp_path)
+            with patch('src.config.loader.load_dotenv'):  # Prevent loading .env file
+                with patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
+                    with pytest.raises(ValueError, match="DPI must be positive"):
+                        load_config(temp_path)
         finally:
             os.unlink(temp_path)
     
