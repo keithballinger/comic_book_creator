@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg
+
+# Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Configuration files
+.env
+.flaskenv
+
+# Database files
+*.sqlite3
+db.sqlite3
+
+# Other
+.coverage
+htmlcov/
