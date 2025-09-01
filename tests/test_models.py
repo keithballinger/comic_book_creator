@@ -295,10 +295,12 @@ class TestProcessingOptions:
         
     def test_page_range_filter(self):
         """Test page range filtering."""
-        options = ProcessingOptions(page_range=[1, 3, 5])
+        options = ProcessingOptions(page_range=(1, 3))  # Pages 1-3 inclusive
         assert options.should_process_page(1) is True
-        assert options.should_process_page(2) is False
+        assert options.should_process_page(2) is True
         assert options.should_process_page(3) is True
+        assert options.should_process_page(4) is False
+        assert options.should_process_page(0) is False
         
     def test_invalid_quality(self):
         """Test invalid quality setting."""

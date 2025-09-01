@@ -1,7 +1,7 @@
 """Generation and output data models for Comic Book Creator."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 import hashlib
 
@@ -61,6 +61,7 @@ class GeneratedPage:
     panels: List[GeneratedPanel]
     composed_image: Optional[bytes] = None
     composition_time: float = 0.0
+    generation_time: float = 0.0  # Total time to generate all panels
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
@@ -86,31 +87,34 @@ class GeneratedPage:
 @dataclass
 class ProcessingResult:
     """Result of processing a comic script."""
-    pages: List[GeneratedPage]
+    success: bool = True
+    script: Optional['ComicScript'] = None  # Forward reference
+    generated_pages: Optional[List[GeneratedPage]] = None
+    validation_result: Optional['ValidationResult'] = None  # Forward reference
+    processing_time: float = 0.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
     export_paths: Dict[str, str] = field(default_factory=dict)
-    total_time: float = 0.0
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     
     def __post_init__(self):
-        """Calculate total processing time."""
-        if not self.total_time and self.pages:
-            self.total_time = sum(
-                page.metadata.get("total_generation_time", 0) +
-                page.metadata.get("composition_time", 0)
-                for page in self.pages
+        """Calculate total processing time if not set."""
+        if not self.processing_time and self.generated_pages:
+            self.processing_time = sum(
+                page.generation_time
+                for page in self.generated_pages
             )
     
     def is_successful(self) -> bool:
         """Check if processing was successful."""
-        return not self.errors and all(page.is_complete() for page in self.pages)
+        return self.success and not self.errors
     
     def get_summary(self) -> Dict[str, Any]:
         """Get processing summary."""
         return {
-            "total_pages": len(self.pages),
-            "total_panels": sum(len(page.panels) for page in self.pages),
-            "total_time_seconds": self.total_time,
+            "total_pages": len(self.generated_pages) if self.generated_pages else 0,
+            "total_panels": sum(len(page.panels) for page in self.generated_pages) if self.generated_pages else 0,
+            "total_time_seconds": self.processing_time,
             "successful": self.is_successful(),
             "error_count": len(self.errors),
             "warning_count": len(self.warnings),
@@ -121,11 +125,15 @@ class ProcessingResult:
 @dataclass
 class ProcessingOptions:
     """Options for processing a comic script."""
-    page_range: Optional[List[int]] = None
-    style_override: Optional[str] = None
+    page_range: Optional[Tuple[int, int]] = None  # (start, end) inclusive
+    style_preset: Optional[str] = None  # Name of style preset to use
+    style_override: Optional[str] = None  # Custom style override
     quality: str = "high"
     export_formats: List[str] = field(default_factory=lambda: ["png"])
     cache_enabled: bool = True
+    skip_cache: bool = False  # Force regeneration
+    parallel_generation: bool = False  # Generate panels in parallel
+    render_text: bool = True  # Whether to render text on panels
     debug_mode: bool = False
     
     def __post_init__(self):
@@ -143,7 +151,8 @@ class ProcessingOptions:
         """Check if a page should be processed based on page range."""
         if self.page_range is None:
             return True
-        return page_number in self.page_range
+        start, end = self.page_range
+        return start <= page_number <= end
 
 
 @dataclass
