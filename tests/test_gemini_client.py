@@ -50,9 +50,11 @@ class TestGeminiClient:
         """Test panel image generation."""
         # Mock the API response
         mock_response = MagicMock()
-        mock_response.images = [MagicMock(data=b'fake_image_data')]
+        mock_image = MagicMock()
+        mock_image.image.data = b'fake_image_data'
+        mock_response.generated_images = [mock_image]
         
-        mock_client.client.models.generate_images = AsyncMock(return_value=mock_response)
+        mock_client.client.models.generate_images = MagicMock(return_value=mock_response)
         
         # Generate image
         prompt = "A hero standing on a rooftop"
@@ -68,13 +70,13 @@ class TestGeminiClient:
         
         # Check that style was included in prompt
         call_args = mock_client.client.models.generate_images.call_args
-        assert 'comic book' in call_args.kwargs['prompt']
-        assert 'vibrant' in call_args.kwargs['prompt']
+        assert 'comic book' in call_args[1]['prompt']
+        assert 'vibrant' in call_args[1]['prompt']
     
     @pytest.mark.asyncio
     async def test_generate_panel_image_error(self, mock_client):
         """Test panel image generation with error."""
-        mock_client.client.models.generate_images = AsyncMock(
+        mock_client.client.models.generate_images = MagicMock(
             side_effect=Exception("API Error")
         )
         
@@ -84,13 +86,11 @@ class TestGeminiClient:
     @pytest.mark.asyncio
     async def test_enhance_panel_description(self, mock_client):
         """Test panel description enhancement."""
-        # Create mock response stream
-        mock_chunk1 = MagicMock(text="Enhanced ")
-        mock_chunk2 = MagicMock(text="description")
-        mock_response = AsyncMock()
-        mock_response.__aiter__.return_value = [mock_chunk1, mock_chunk2]
+        # Create mock response
+        mock_response = MagicMock()
+        mock_response.text = "Enhanced description"
         
-        mock_client.client.models.generate_content_stream = AsyncMock(
+        mock_client.client.models.generate_content = MagicMock(
             return_value=mock_response
         )
         
@@ -101,17 +101,16 @@ class TestGeminiClient:
         result = await mock_client.enhance_panel_description(panel)
         
         assert result == "Enhanced description"
-        mock_client.client.models.generate_content_stream.assert_called_once()
+        mock_client.client.models.generate_content.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_enhance_panel_description_with_characters(self, mock_client):
         """Test panel description enhancement with character references."""
         # Create mock response
-        mock_chunk = MagicMock(text="Enhanced with character details")
-        mock_response = AsyncMock()
-        mock_response.__aiter__.return_value = [mock_chunk]
+        mock_response = MagicMock()
+        mock_response.text = "Enhanced with character details"
         
-        mock_client.client.models.generate_content_stream = AsyncMock(
+        mock_client.client.models.generate_content = MagicMock(
             return_value=mock_response
         )
         
@@ -133,15 +132,15 @@ class TestGeminiClient:
         assert result == "Enhanced with character details"
         
         # Check that character info was included in prompt
-        call_args = mock_client.client.models.generate_content_stream.call_args
-        prompt = call_args.kwargs['contents'][0]['parts'][0]['text']
+        call_args = mock_client.client.models.generate_content.call_args
+        prompt = call_args[1]['contents']
         assert "Hero" in prompt
         assert "blue costume" in prompt
     
     @pytest.mark.asyncio
     async def test_enhance_panel_description_error_fallback(self, mock_client):
         """Test panel description enhancement with error fallback."""
-        mock_client.client.models.generate_content_stream = AsyncMock(
+        mock_client.client.models.generate_content = MagicMock(
             side_effect=Exception("API Error")
         )
         
@@ -155,11 +154,10 @@ class TestGeminiClient:
     async def test_generate_character_reference(self, mock_client):
         """Test character reference generation."""
         # Create mock response
-        mock_chunk = MagicMock(text="Detailed character appearance")
-        mock_response = AsyncMock()
-        mock_response.__aiter__.return_value = [mock_chunk]
+        mock_response = MagicMock()
+        mock_response.text = "Detailed character appearance"
         
-        mock_client.client.models.generate_content_stream = AsyncMock(
+        mock_client.client.models.generate_content = MagicMock(
             return_value=mock_response
         )
         

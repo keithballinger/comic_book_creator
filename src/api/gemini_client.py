@@ -50,40 +50,27 @@ class GeminiClient:
             # Build the full prompt with style information
             full_prompt = self._build_image_prompt(prompt, style_config)
             
-            # Configure the request
-            config = {
-                'candidate_count': 1,
-                'aspect_ratio': '3:4',  # Comic panel aspect ratio
-                'safety_settings': [
-                    {
-                        'category': 'HARM_CATEGORY_HATE_SPEECH',
-                        'threshold': 'BLOCK_ONLY_HIGH'
-                    },
-                    {
-                        'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                        'threshold': 'BLOCK_ONLY_HIGH'
-                    },
-                    {
-                        'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                        'threshold': 'BLOCK_ONLY_HIGH'
-                    },
-                    {
-                        'category': 'HARM_CATEGORY_HARASSMENT',
-                        'threshold': 'BLOCK_ONLY_HIGH'
-                    }
-                ]
-            }
-            
-            # Generate the image
-            response = await self.client.models.generate_images(
-                model=self.image_model,
-                prompt=full_prompt,
-                config=config
+            # Run synchronous API call in executor to avoid blocking
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_images(
+                    model=self.image_model,
+                    prompt=full_prompt,
+                    number_of_images=1,
+                    aspect_ratio='3:4'  # Comic panel aspect ratio
+                )
             )
             
             # Extract image data from response
-            if response and response.images:
-                return response.images[0].data
+            if response and response.generated_images:
+                # Convert base64 or get raw bytes
+                import base64
+                image_data = response.generated_images[0].image.data
+                if isinstance(image_data, str):
+                    # If it's base64 encoded string
+                    return base64.b64decode(image_data)
+                return image_data
             else:
                 raise ValueError("No image generated from API")
                 
@@ -118,26 +105,24 @@ class GeminiClient:
             }
             
             # Generate enhanced description
-            contents = [
-                {
-                    'role': 'user',
-                    'parts': [{'text': prompt}]
-                }
-            ]
+            contents = prompt
             
-            response = await self.client.models.generate_content_stream(
-                model=self.text_model,
-                config=config,
-                contents=contents
+            # Run synchronous API call in executor
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.text_model,
+                    config=config,
+                    contents=contents
+                )
             )
             
-            # Collect the response
-            enhanced_description = ''
-            async for chunk in response:
-                if chunk.text:
-                    enhanced_description += chunk.text
-                    
-            return enhanced_description.strip()
+            # Extract text from response
+            if response and response.text:
+                return response.text.strip()
+            else:
+                return panel.description
             
         except Exception as e:
             logger.error(f"Error enhancing panel description: {e}")
@@ -180,27 +165,27 @@ class GeminiClient:
                 'max_output_tokens': 300,
             }
             
-            contents = [
-                {
-                    'role': 'user',
-                    'parts': [{'text': prompt}]
-                }
-            ]
-            
-            response = await self.client.models.generate_content_stream(
-                model=self.text_model,
-                config=config,
-                contents=contents
+            # Run synchronous API call in executor
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.text_model,
+                    config=config,
+                    contents=prompt
+                )
             )
             
+            # Extract text from response
             appearance_description = ''
-            async for chunk in response:
-                if chunk.text:
-                    appearance_description += chunk.text
+            if response and response.text:
+                appearance_description = response.text.strip()
+            else:
+                appearance_description = description
                     
             return CharacterReference(
                 name=character_name,
-                appearance_description=appearance_description.strip()
+                appearance_description=appearance_description
             )
             
         except Exception as e:
