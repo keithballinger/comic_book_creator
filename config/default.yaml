@@ -1,0 +1,25 @@
+style:
+  art_style: "modern comic book"
+  color_palette: "vibrant"
+  line_weight: "medium"
+  shading: "cel-shaded"
+
+generation:
+  panel_size: [1024, 1536]
+  quality: "high"
+  consistency_weight: 0.7
+
+text:
+  font_family: "Comic Sans MS"
+  bubble_style: "classic"
+  caption_style: "box"
+  
+output:
+  formats: ["png", "pdf", "cbz"]
+  page_size: [2400, 3600]
+  dpi: 300
+
+performance:
+  cache_enabled: true
+  max_workers: 4
+  batch_size: 10

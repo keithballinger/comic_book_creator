@@ -1,43 +1,87 @@
-# Byte-compiled / optimized / compiled files
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyd
-*.pyo
-*.egg-info/
-.pytest_cache/
+*.py[cod]
+*$py.class
 
-# Virtual environment
-venv/
-.venv/
-env/
-.env/
+# C extensions
+*.so
 
 # Distribution / packaging
 .Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
 *.egg
+MANIFEST
 
-# Editors
-.idea/
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
 .vscode/
-*.sublime-project
-*.sublime-workspace
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
 
-# Logs and temporary files
-*.log
-tmp/
+# Project specific
+.env
+output/
+*.png
+*.pdf
+*.cbz
+.cache/
 temp/
 
-# Configuration files
-.env
-.flaskenv
+# Logs
+*.log
 
-# Database files
-*.sqlite3
-db.sqlite3
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# Other
-.coverage
-htmlcov/
+# ruff
+.ruff_cache/
+
+# Generated files
+generated_*

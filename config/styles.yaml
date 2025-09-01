@@ -1,0 +1,41 @@
+# Available art styles for comic generation
+styles:
+  modern:
+    name: "Modern Comic Book"
+    description: "Contemporary superhero comic style with bold lines and vibrant colors"
+    art_style: "modern comic book"
+    color_palette: "vibrant"
+    line_weight: "medium"
+    shading: "cel-shaded"
+    
+  manga:
+    name: "Manga"
+    description: "Japanese manga style with clean lines and expressive characters"
+    art_style: "manga"
+    color_palette: "black and white"
+    line_weight: "thin"
+    shading: "screen-tone"
+    
+  indie:
+    name: "Indie Comic"
+    description: "Alternative comic style with unique artistic expression"
+    art_style: "indie comic"
+    color_palette: "muted"
+    line_weight: "varied"
+    shading: "watercolor"
+    
+  golden_age:
+    name: "Golden Age"
+    description: "Classic 1940s-1950s comic book style"
+    art_style: "golden age comic"
+    color_palette: "primary colors"
+    line_weight: "bold"
+    shading: "flat"
+    
+  noir:
+    name: "Noir"
+    description: "Dark, atmospheric style for crime and mystery comics"
+    art_style: "noir"
+    color_palette: "black and white with red accents"
+    line_weight: "heavy"
+    shading: "high contrast"
