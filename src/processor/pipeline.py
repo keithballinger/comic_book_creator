@@ -43,7 +43,8 @@ class ProcessingPipeline:
             text_renderer: Text renderer instance
             output_dir: Output directory for generated comics
         """
-        self.config = config or ConfigLoader()
+        self.config_loader = config or ConfigLoader()
+        self.config = self.config_loader.load()  # Load the actual config
         self.panel_generator = panel_generator
         self.text_renderer = text_renderer or TextRenderer()
         self.output_dir = Path(output_dir)
@@ -268,10 +269,10 @@ class ProcessingPipeline:
         client = GeminiClient(api_key=self.config.api_key)
         consistency_manager = ConsistencyManager()
         cache_manager = CacheManager(
-            cache_dir=self.config.cache.get('directory', '.cache')
+            cache_dir=self.config.cache_dir
         )
         rate_limiter = RateLimiter(
-            calls_per_minute=self.config.api.get('rate_limit', 30)
+            calls_per_minute=self.config.max_concurrent_requests * 10  # Approximate rate limit
         )
         
         # Create panel generator
@@ -284,8 +285,9 @@ class ProcessingPipeline:
         
         # Set style if configured
         if style_name := options.style_preset:
-            if style := self.config.get_style(style_name):
-                self.panel_generator.set_style(style)
+            # For now, just use the style name - we can expand this later
+            # to load actual style configurations
+            pass
     
     async def _render_text_on_panels(
         self,

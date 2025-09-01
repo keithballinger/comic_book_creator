@@ -33,13 +33,14 @@ class TestProcessingPipeline:
     
     @pytest.fixture
     def mock_config(self):
-        """Create mock configuration."""
+        """Create mock configuration loader."""
+        config_loader = MagicMock()
         config = MagicMock()
         config.api_key = "test_key"
-        config.cache = {'directory': '.cache'}
-        config.api = {'rate_limit': 30}
-        config.get_style = MagicMock(return_value=None)
-        return config
+        config.cache_dir = '.cache'
+        config.max_concurrent_requests = 4
+        config_loader.load.return_value = config
+        return config_loader
     
     @pytest.fixture
     def mock_panel_generator(self):
