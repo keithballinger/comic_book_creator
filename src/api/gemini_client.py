@@ -79,9 +79,9 @@ class GeminiClient:
                         for part in candidate.content.parts:
                             # Check if this part contains image data
                             if hasattr(part, 'inline_data') and part.inline_data:
-                                import base64
-                                # The data is base64 encoded
-                                return base64.b64decode(part.inline_data.data)
+                                # The data is already in bytes format
+                                if hasattr(part.inline_data, 'data'):
+                                    return part.inline_data.data
                             
             # If no image was generated, raise an error
             raise ValueError("No image generated from API")
