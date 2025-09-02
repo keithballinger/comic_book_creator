@@ -184,19 +184,12 @@ class ProcessingPipeline:
             for prev_page in previous_pages[-2:]:  # Use last 2 pages for context
                 previous_panels.extend(prev_page.panels)
         
-        # Generate panels
-        if options.parallel_generation:
-            generated_panels = await self.panel_generator.generate_page_panels(
-                page,
-                previous_panels,
-                parallel=True
-            )
-        else:
-            generated_panels = await self.panel_generator.generate_page_panels(
-                page,
-                previous_panels,
-                parallel=False
-            )
+        # Generate panels using reference-based approach for better consistency
+        # Always use the new reference-based generation method
+        generated_panels = await self.panel_generator.generate_page_with_references(
+            page,
+            previous_panels
+        )
         
         # Apply text rendering if enabled
         if options.render_text:

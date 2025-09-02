@@ -7,6 +7,9 @@ from typing import Dict, List, Optional, Any
 
 from src.api import GeminiClient, RateLimiter
 from src.generator.consistency import ConsistencyManager
+from src.generator.reference_builder import ReferenceSheetBuilder
+from PIL import Image
+import io
 from src.models import (
     GeneratedPanel,
     Panel,
@@ -38,6 +41,7 @@ class PanelGenerator:
         self.client = gemini_client or GeminiClient()
         self.consistency_manager = consistency_manager or ConsistencyManager()
         self.rate_limiter = rate_limiter or RateLimiter(calls_per_minute=30)
+        self.reference_builder = ReferenceSheetBuilder()
         
         # Track generation statistics
         self.stats = {
@@ -176,6 +180,141 @@ class PanelGenerator:
                 
                 # Add to previous panels for next iteration
                 previous_panels.append(generated)
+        
+        return generated_panels
+    
+    async def generate_page_with_references(
+        self,
+        page: Page,
+        previous_pages: Optional[List[GeneratedPanel]] = None
+    ) -> List[GeneratedPanel]:
+        """Generate a page using progressive reference sheets.
+        
+        This method builds the page incrementally, using a comprehensive
+        reference sheet that includes the page-in-progress and all character/location
+        references to maintain consistency.
+        
+        Args:
+            page: Page containing panels
+            previous_pages: Previously generated panels from other pages
+            
+        Returns:
+            List of generated panels
+        """
+        generated_panels = []
+        page_canvas = Image.new('RGB', (2400, 3600), 'white')
+        
+        # Extract initial references from previous pages
+        if previous_pages:
+            for prev_panel in previous_pages[-6:]:  # Use last 6 panels as references
+                if prev_panel.image_data:
+                    try:
+                        img = Image.open(io.BytesIO(prev_panel.image_data))
+                        panel_metadata = {
+                            'characters': prev_panel.panel.characters if prev_panel.panel else [],
+                            'panel_number': prev_panel.panel.number if prev_panel.panel else 0
+                        }
+                        self.reference_builder.extract_references_from_panel(img, panel_metadata)
+                    except Exception as e:
+                        logger.warning(f"Could not extract references: {e}")
+        
+        # Generate each panel with progressive context
+        for i, panel in enumerate(page.panels):
+            logger.info(f"Generating panel {i+1}/{len(page.panels)} with reference sheet")
+            
+            # Calculate panel position
+            panel_position = self.reference_builder.calculate_panel_position(i, len(page.panels))
+            
+            # Create comprehensive reference sheet
+            reference_sheet = self.reference_builder.create_comprehensive_reference(
+                page_in_progress=page_canvas,
+                target_panel_position=panel_position,
+                panel_number=i + 1,
+                total_panels=len(page.panels)
+            )
+            
+            # Build prompt for this specific panel
+            prompt = f"""
+            Generate ONLY panel {i+1} for this comic page.
+            
+            The reference image shows:
+            - The comic page with {i} panels already completed (maintain EXACT same style)
+            - Character reference strip (use these EXACT character designs)
+            - Location references (maintain consistency)
+            - The RED RECTANGLE shows where this panel should be placed
+            
+            Panel {i+1} content:
+            {panel.raw_text if hasattr(panel, 'raw_text') else panel.description}
+            
+            CRITICAL INSTRUCTIONS:
+            1. Generate ONLY the content for the red-outlined panel area
+            2. Maintain EXACT same art style, colors, and line weights as existing panels
+            3. Use EXACT character designs from the reference strip
+            4. Output dimensions should be approximately {panel_position[2]-panel_position[0]}x{panel_position[3]-panel_position[1]} pixels
+            5. Include all dialogue, captions, and sound effects from the panel description
+            
+            Return ONLY the panel image, not the entire page.
+            """
+            
+            try:
+                # Generate panel with reference sheet
+                panel_image_data = await self.rate_limiter.execute_with_retry(
+                    self.client.generate_panel_image,
+                    prompt,
+                    [reference_sheet],  # Use reference sheet as context
+                    self._get_style_config()
+                )
+                
+                # Convert generated panel to image
+                panel_img = Image.open(io.BytesIO(panel_image_data))
+                
+                # Resize to fit target position if needed
+                target_width = panel_position[2] - panel_position[0]
+                target_height = panel_position[3] - panel_position[1]
+                panel_img = panel_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                
+                # Add panel to page canvas
+                page_canvas.paste(panel_img, (panel_position[0], panel_position[1]))
+                
+                # Update reference builder with new panel
+                self.reference_builder.update_page_state(page_canvas)
+                
+                # Extract any new references from this panel
+                panel_metadata = {
+                    'characters': panel.characters,
+                    'panel_number': panel.number,
+                    'location': getattr(panel, 'location', None)
+                }
+                self.reference_builder.extract_references_from_panel(panel_img, panel_metadata)
+                
+                # Create GeneratedPanel object
+                generated_panel = GeneratedPanel(
+                    panel=panel,
+                    image_data=panel_image_data,
+                    generation_time=0,  # We'd track this properly
+                    metadata={
+                        'prompt': prompt,
+                        'used_reference_sheet': True,
+                        'panel_position': panel_position
+                    }
+                )
+                
+                generated_panels.append(generated_panel)
+                
+                # Register with consistency manager
+                self.consistency_manager.register_panel(generated_panel)
+                
+                logger.info(f"Successfully generated panel {i+1}")
+                
+            except Exception as e:
+                logger.error(f"Error generating panel {i+1}: {e}")
+                # Add placeholder panel on error
+                generated_panels.append(GeneratedPanel(
+                    panel=panel,
+                    image_data=b"",
+                    generation_time=0,
+                    metadata={'error': str(e)}
+                ))
         
         return generated_panels
     
