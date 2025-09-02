@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 import logging
 from dotenv import load_dotenv
 from google import genai
+from PIL import Image
 
 from src.models import Panel, CharacterReference
 
@@ -317,3 +318,68 @@ class GeminiClient:
                     prompt += f"\n- {char_name}: {char_ref.appearance_description}"
         
         return prompt
+    
+    async def generate_image(
+        self,
+        prompt: str,
+        context_images: Optional[List[Image.Image]] = None,
+        width: int = 1024,
+        height: int = 1024,
+        quality: str = "high"
+    ) -> bytes:
+        """Generate a single image using Gemini Flash 2.5 Image Preview.
+        
+        Args:
+            prompt: Text prompt for image generation
+            context_images: Optional PIL images for context/consistency
+            width: Image width in pixels
+            height: Image height in pixels
+            quality: Quality setting (high/medium/low)
+            
+        Returns:
+            Generated image as bytes
+        """
+        logger.info("Calling Gemini API for image generation")
+        
+        try:
+            # Prepare contents for multimodal API call
+            contents = []
+            
+            # Add context images if provided
+            if context_images:
+                for img in context_images:
+                    contents.append(img)
+            
+            # Add the text prompt
+            contents.append(prompt)
+            
+            # Configure generation
+            config = {
+                'response_modalities': ['IMAGE'],
+                'response_mime_type': 'image/png',
+            }
+            
+            # Run API call
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.models.generate_content(
+                    model=self.image_model,
+                    contents=contents,
+                    config=genai.types.GenerateContentConfig(**config)
+                )
+            )
+            
+            # Extract image from response
+            if response and response.candidates:
+                for candidate in response.candidates:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'data') and part.mime_type.startswith('image'):
+                            logger.info("Successfully generated image")
+                            return part.data
+            
+            raise ValueError("No image data in response")
+            
+        except Exception as e:
+            logger.error(f"Error generating image: {e}")
+            raise
