@@ -247,26 +247,33 @@ class PanelGenerator:
             )
             
             # Build prompt for this specific panel
+            # Calculate exact panel dimensions
+            panel_width = panel_position[2] - panel_position[0]
+            panel_height = panel_position[3] - panel_position[1]
+            
             prompt = f"""
-            Generate ONLY panel {i+1} for this comic page.
+            CRITICAL: Generate EXACTLY ONE SINGLE PANEL IMAGE.
             
-            The reference image shows:
-            - The comic page with {i} panels already completed (maintain EXACT same style)
-            - Character reference strip (use these EXACT character designs)
-            - Location references (maintain consistency)
-            - The RED RECTANGLE shows where this panel should be placed
+            EXACT DIMENSIONS REQUIRED: {panel_width}x{panel_height} pixels
+            This is panel {i+1} of {len(page.panels)} for this page.
             
-            Panel {i+1} content:
+            PANEL CONTENT TO ILLUSTRATE:
             {getattr(panel, 'raw_text', panel.description)}
             
-            CRITICAL INSTRUCTIONS:
-            1. Generate ONLY the content for the red-outlined panel area
-            2. Maintain EXACT same art style, colors, and line weights as existing panels
-            3. Use EXACT character designs from the reference strip
-            4. Output dimensions should be approximately {panel_position[2]-panel_position[0]}x{panel_position[3]-panel_position[1]} pixels
-            5. Include all dialogue, captions, and sound effects from the panel description
+            STRICT REQUIREMENTS:
+            1. Generate EXACTLY ONE rectangular panel image of EXACTLY {panel_width}x{panel_height} pixels
+            2. DO NOT create multiple panels or subdivide the image
+            3. ALL text elements (captions, speech bubbles, thought bubbles) MUST be INSIDE the panel boundaries
+            4. Captions should be rectangular boxes at the top or bottom INSIDE the panel
+            5. Speech bubbles should be INSIDE the panel area, not extending beyond edges
+            6. This is a SINGLE SCENE/MOMENT in time
+            7. Fill the ENTIRE {panel_width}x{panel_height} area with the illustration
+            8. The artwork should extend to the edges - no white borders
             
-            Return ONLY the panel image, not the entire page.
+            The reference image shows the page layout and style to match.
+            The RED RECTANGLE shows where this single panel will be placed.
+            
+            OUTPUT: One complete rectangular comic panel of EXACTLY {panel_width}x{panel_height} pixels with ALL text elements contained within.
             """
             
             # Save debug files if debug directory specified
@@ -300,10 +307,36 @@ class PanelGenerator:
                 # Convert generated panel to image
                 panel_img = Image.open(io.BytesIO(panel_image_data))
                 
-                # Resize to fit target position if needed
+                # Ensure exact dimensions without distortion
                 target_width = panel_position[2] - panel_position[0]
                 target_height = panel_position[3] - panel_position[1]
-                panel_img = panel_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                
+                # If the image isn't exactly the right size, resize to fit while maintaining aspect ratio,
+                # then crop or pad to exact dimensions
+                if panel_img.size != (target_width, target_height):
+                    # Calculate scale to fit
+                    scale_x = target_width / panel_img.width
+                    scale_y = target_height / panel_img.height
+                    scale = max(scale_x, scale_y)  # Use max to ensure we cover the full area
+                    
+                    # Resize maintaining aspect ratio
+                    new_width = int(panel_img.width * scale)
+                    new_height = int(panel_img.height * scale)
+                    panel_img = panel_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Crop to exact size (center crop)
+                    if new_width > target_width or new_height > target_height:
+                        left = (new_width - target_width) // 2
+                        top = (new_height - target_height) // 2
+                        panel_img = panel_img.crop((left, top, left + target_width, top + target_height))
+                    
+                    # Pad if needed (shouldn't happen with max scale)
+                    if panel_img.size != (target_width, target_height):
+                        padded = Image.new('RGB', (target_width, target_height), 'white')
+                        x = (target_width - panel_img.width) // 2
+                        y = (target_height - panel_img.height) // 2
+                        padded.paste(panel_img, (x, y))
+                        panel_img = padded
                 
                 # Add panel to page canvas
                 page_canvas.paste(panel_img, (panel_position[0], panel_position[1]))

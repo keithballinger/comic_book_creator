@@ -124,7 +124,7 @@ class ProcessingOptions:
     quality: str = "high"
     export_formats: List[str] = field(default_factory=lambda: ["png"])
     parallel_generation: bool = False  # Generate panels in parallel
-    render_text: bool = True  # Whether to render text on panels
+    # Text rendering removed - Gemini handles all text
     debug_mode: bool = False
     
     def __post_init__(self):

@@ -18,7 +18,7 @@ from src.models import (
 )
 from src.parser import ScriptParser, ScriptValidator
 from src.generator import PanelGenerator
-from src.output import TextRenderer
+# TextRenderer removed - Gemini handles all text
 from src.api import GeminiClient, RateLimiter
 from src.config import ConfigLoader
 
@@ -32,7 +32,6 @@ class ProcessingPipeline:
         self,
         config: Optional[ConfigLoader] = None,
         panel_generator: Optional[PanelGenerator] = None,
-        text_renderer: Optional[TextRenderer] = None,
         output_dir: str = "output"
     ):
         """Initialize processing pipeline.
@@ -40,13 +39,12 @@ class ProcessingPipeline:
         Args:
             config: Configuration loader
             panel_generator: Panel generator instance
-            text_renderer: Text renderer instance
             output_dir: Output directory for generated comics
         """
         self.config_loader = config or ConfigLoader()
         self.config = self.config_loader.load()  # Load the actual config
         self.panel_generator = panel_generator
-        self.text_renderer = text_renderer or TextRenderer()
+        # TextRenderer removed - Gemini handles all text
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
@@ -198,12 +196,7 @@ class ProcessingPipeline:
             previous_panels
         )
         
-        # Apply text rendering if enabled
-        if options.render_text:
-            generated_panels = await self._render_text_on_panels(
-                generated_panels,
-                options
-            )
+        # TextRenderer removed - Gemini handles all text
         
         # Create generated page
         generated_page = GeneratedPage(
@@ -241,12 +234,7 @@ class ProcessingPipeline:
             previous_panels,
         )
         
-        # Apply text rendering if enabled
-        if options.render_text and generated_panel.image_data:
-            generated_panel = await self._render_text_on_panel(
-                generated_panel,
-                options
-            )
+        # TextRenderer removed - Gemini handles all text
         
         return generated_panel
     
@@ -283,64 +271,7 @@ class ProcessingPipeline:
             # to load actual style configurations
             pass
     
-    async def _render_text_on_panels(
-        self,
-        panels: List[GeneratedPanel],
-        options: ProcessingOptions
-    ) -> List[GeneratedPanel]:
-        """Render text on generated panels.
-        
-        Args:
-            panels: Generated panels
-            options: Processing options
-            
-        Returns:
-            Panels with rendered text
-        """
-        from PIL import Image
-        import io
-        
-        rendered_panels = []
-        
-        for gen_panel in panels:
-            if gen_panel.image_data and gen_panel.panel:
-                try:
-                    # Convert image data to PIL Image
-                    image = Image.open(io.BytesIO(gen_panel.image_data))
-                    
-                    # Render text
-                    rendered_image = self.text_renderer.render_panel_text(
-                        image,
-                        gen_panel.panel
-                    )
-                    
-                    # Convert back to bytes
-                    output_buffer = io.BytesIO()
-                    rendered_image.save(output_buffer, format='PNG')
-                    gen_panel.image_data = output_buffer.getvalue()
-                    
-                except Exception as e:
-                    logger.error(f"Error rendering text on panel: {e}")
-            
-            rendered_panels.append(gen_panel)
-        
-        return rendered_panels
-    
-    async def _render_text_on_panel(
-        self,
-        panel: GeneratedPanel,
-        options: ProcessingOptions
-    ) -> GeneratedPanel:
-        """Render text on a single panel.
-        
-        Args:
-            panel: Generated panel
-            options: Processing options
-            
-        Returns:
-            Panel with rendered text
-        """
-        return (await self._render_text_on_panels([panel], options))[0]
+    # TextRenderer methods removed - Gemini handles all text
     
     def _extract_characters(self, script: ComicScript) -> List[str]:
         """Extract unique characters from script.

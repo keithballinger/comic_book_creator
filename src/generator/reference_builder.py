@@ -5,6 +5,7 @@ import logging
 from typing import List, Dict, Optional, Tuple, Any
 from PIL import Image, ImageDraw, ImageFont
 from dataclasses import dataclass
+from src.output.layout_config import calculate_panel_position
 
 logger = logging.getLogger(__name__)
 
@@ -184,31 +185,12 @@ class ReferenceSheetBuilder:
             draw: PIL Draw object
             total_panels: Number of panels to layout
         """
-        # Simple grid layout
         if total_panels <= 0:
             return
-            
-        # Calculate panel dimensions based on count
-        if total_panels == 1:
-            panels_layout = [(1, 1)]
-        elif total_panels <= 4:
-            panels_layout = [(2, 2)]
-        elif total_panels <= 6:
-            panels_layout = [(2, 3)]
-        else:
-            panels_layout = [(3, 3)]
         
-        rows, cols = panels_layout[0]
-        panel_width = (self.page_width - 50) // cols
-        panel_height = (self.page_height - 50) // rows
-        
+        # Use the same calculation method for consistency
         for i in range(total_panels):
-            row = i // cols
-            col = i % cols
-            x1 = 25 + col * panel_width
-            y1 = 25 + row * panel_height
-            x2 = x1 + panel_width - 10
-            y2 = y1 + panel_height - 10
+            x1, y1, x2, y2 = self.calculate_panel_position(i, total_panels)
             
             # Draw panel border
             draw.rectangle([x1, y1, x2, y2], outline='lightgray', width=2)
@@ -297,32 +279,13 @@ class ReferenceSheetBuilder:
         Returns:
             (x1, y1, x2, y2) coordinates
         """
-        # Simple grid layout calculation
-        if total_panels <= 4:
-            cols = 2
-            rows = 2
-        elif total_panels <= 6:
-            cols = 2
-            rows = 3
-        elif total_panels <= 9:
-            cols = 3
-            rows = 3
-        else:
-            cols = 4
-            rows = 3
-        
-        panel_width = (self.page_width - 50) // cols
-        panel_height = (self.page_height - 50) // rows
-        
-        row = panel_index // cols
-        col = panel_index % cols
-        
-        x1 = 25 + col * panel_width
-        y1 = 25 + row * panel_height
-        x2 = x1 + panel_width - 10
-        y2 = y1 + panel_height - 10
-        
-        return (x1, y1, x2, y2)
+        # Use the shared layout configuration
+        return calculate_panel_position(
+            panel_index,
+            total_panels,
+            self.page_width,
+            self.page_height
+        )
     
     def reset(self):
         """Reset the reference builder for a new page."""

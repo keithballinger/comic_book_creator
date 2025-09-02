@@ -47,12 +47,12 @@ def cli():
               default='standard', help='Output quality')
 @click.option('--pages', '-p', help='Page range (e.g., 1-3)')
 @click.option('--parallel/--sequential', default=False, help='Parallel panel generation')
-@click.option('--no-text', is_flag=True, help='Skip text rendering')
+# Text rendering removed - Gemini handles all text
 @click.option('--format', '-f', type=click.Choice(['png', 'pdf', 'cbz']), 
               multiple=True, default=['png'], help='Export formats')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
 def generate(script_path, output, config, style, quality, pages, parallel,
-             no_text, format, verbose):
+             format, verbose):
     """Generate a comic from a script file."""
     
     # Set logging level
@@ -95,7 +95,7 @@ def generate(script_path, output, config, style, quality, pages, parallel,
         style_preset=style,
         quality=quality,
         parallel_generation=parallel,
-        render_text=not no_text,
+        # Text rendering removed - Gemini handles all text
         export_formats=list(format)
     )
     
@@ -110,7 +110,7 @@ def generate(script_path, output, config, style, quality, pages, parallel,
     info_table.add_row("Quality", quality)
     info_table.add_row("Pages", pages or "All")
     info_table.add_row("Generation Mode", "Parallel" if parallel else "Sequential")
-    info_table.add_row("Render Text", "No" if no_text else "Yes")
+    # Text rendering removed - Gemini handles all text
     info_table.add_row("Export Formats", ", ".join(format))
     
     console.print("\n", info_table, "\n")

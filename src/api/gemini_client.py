@@ -255,15 +255,24 @@ class GeminiClient:
             if 'shading' in style_config:
                 prompt_parts.append(f"Shading: {style_config['shading']}")
         
+        # Add strict single panel instruction
+        prompt_parts.append("\n⚠️ CRITICAL: Generate EXACTLY ONE SINGLE PANEL - not multiple panels, not a grid, just ONE rectangular image.")
+        
         # Add base prompt
-        prompt_parts.append("\nCreate a comic book panel with the following:")
+        prompt_parts.append("\nCreate a single comic book panel with the following:")
         prompt_parts.append(base_prompt)
         
         # Add instructions for text rendering
-        prompt_parts.append("\nIMPORTANT: Include all specified dialogue in speech bubbles, thoughts in thought bubbles (cloud-shaped), captions in rectangular caption boxes (typically at top or bottom), and sound effects as stylized text.")
+        prompt_parts.append("\nIMPORTANT TEXT PLACEMENT RULES:")
+        prompt_parts.append("- ALL text elements MUST be INSIDE the panel boundaries")
+        prompt_parts.append("- Captions: Yellow/white rectangular boxes at top or bottom INSIDE the panel")
+        prompt_parts.append("- Speech bubbles: White ovals with tails pointing to speakers, INSIDE the panel")
+        prompt_parts.append("- Thought bubbles: Cloud-shaped bubbles INSIDE the panel")
+        prompt_parts.append("- Sound effects: Stylized text integrated into the artwork")
+        prompt_parts.append("- NO text should extend beyond the panel edges")
         
         # Add quality instructions
-        prompt_parts.append("\nHigh quality comic book panel, professional artwork, detailed illustration with proper text rendering")
+        prompt_parts.append("\nOutput: ONE high-quality comic book panel with exact dimensions, professional artwork, single rectangular illustration with ALL text contained within panel boundaries.")
         
         return "\n".join(prompt_parts)
     
