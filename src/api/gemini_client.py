@@ -28,7 +28,7 @@ class GeminiClient:
             
         self.client = genai.Client(api_key=self.api_key)
         self.text_model = 'gemini-2.0-flash-exp'  # Using latest available model
-        self.image_model = 'imagen-3'  # Image generation model (when available)
+        self.image_model = 'gemini-2.5-flash-image-preview'  # Image generation model
         
     async def generate_panel_image(
         self, 
@@ -53,43 +53,42 @@ class GeminiClient:
             # Run synchronous API call in executor to avoid blocking
             loop = asyncio.get_event_loop()
             
-            # Configure image generation
-            from google.genai.types import GenerateImagesConfig
-            config = GenerateImagesConfig(
-                numberOfImages=1,
-                aspectRatio='3:4',  # Comic panel aspect ratio
-                imageSize='1024x1024'
-            )
+            # Configure for image generation
+            config = {
+                'response_modalities': ['IMAGE', 'TEXT'],
+                'temperature': 0.7,
+                'top_p': 0.95,
+            }
+            
+            # Build contents for the request
+            contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
             
             response = await loop.run_in_executor(
                 None,
-                lambda: self.client.models.generate_images(
+                lambda: self.client.models.generate_content(
                     model=self.image_model,
-                    prompt=full_prompt,
-                    config=config
+                    config=config,
+                    contents=contents
                 )
             )
             
             # Extract image data from response
-            if response and response.generated_images:
-                # Convert base64 or get raw bytes
-                import base64
-                image_data = response.generated_images[0].image.data
-                if isinstance(image_data, str):
-                    # If it's base64 encoded string
-                    return base64.b64decode(image_data)
-                return image_data
-            else:
-                raise ValueError("No image generated from API")
+            if response and response.candidates:
+                for candidate in response.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            # Check if this part contains image data
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                import base64
+                                # The data is base64 encoded
+                                return base64.b64decode(part.inline_data.data)
+                            
+            # If no image was generated, raise an error
+            raise ValueError("No image generated from API")
                 
         except Exception as e:
             logger.error(f"Error generating panel image: {e}")
-            # For now, raise a clear error message about image generation not being available
-            raise NotImplementedError(
-                "Image generation is not yet available via the Gemini API. "
-                "The imagen-3 model is expected to be released soon. "
-                "Text generation and panel description enhancement are fully functional."
-            )
+            raise
     
     async def enhance_panel_description(
         self, 
