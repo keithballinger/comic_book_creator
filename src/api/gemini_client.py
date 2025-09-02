@@ -61,7 +61,27 @@ class GeminiClient:
             }
             
             # Build contents for the request
-            contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
+            # If we have reference images, include them in the request
+            if reference_images:
+                import base64
+                # Build multimodal content with images and text
+                parts = []
+                # Add reference images first
+                for ref_image in reference_images:
+                    parts.append({
+                        'inline_data': {
+                            'data': base64.b64encode(ref_image).decode('utf-8'),
+                            'mime_type': 'image/png'
+                        }
+                    })
+                # Add the text prompt
+                parts.append({
+                    'text': f"Generate a comic book panel image based on this description:\n{full_prompt}"
+                })
+                contents = [{'parts': parts}]
+            else:
+                # Just text prompt if no references
+                contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
             
             response = await loop.run_in_executor(
                 None,
