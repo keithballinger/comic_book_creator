@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 OUTPUT_DIR="generated_examples"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PYTHON_CMD=""  # Will be set by find_python()
 
 echo -e "${BLUE}Comic Book Creator - Example Generation${NC}"
 echo "============================================"
@@ -54,7 +55,7 @@ generate_comic() {
     fi
     
     # Build command
-    local cmd="python -m comic_creator generate \"$script_file\" --output \"${OUTPUT_DIR}/${output_name}\""
+    local cmd="$PYTHON_CMD -m comic_creator generate \"$script_file\" --output \"${OUTPUT_DIR}/${output_name}\""
     
     # Add references flag if requested
     if [ "$use_references" = "true" ]; then
@@ -72,25 +73,44 @@ generate_comic() {
     echo ""
 }
 
+# Function to find Python command
+find_python() {
+    # Try different Python commands in order of preference
+    for cmd in python3 python python3.12 python3.11 python3.10 python3.9 python3.8; do
+        if command -v $cmd &> /dev/null; then
+            PYTHON_CMD=$cmd
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Function to check if comic creator is available
 check_comic_creator() {
     print_status "Checking comic creator installation..."
     
-    if ! command -v python &> /dev/null; then
+    # Find Python command
+    if ! find_python; then
         print_error "Python is not installed or not in PATH"
+        print_status "Please install Python 3.8+ or check your PATH"
+        print_status "On macOS, you can install Python with: brew install python3"
         exit 1
     fi
     
-    # Check if we can import the comic creator
-    if ! python -c "import comic_creator" 2>/dev/null; then
-        print_warning "Comic creator module not found in current directory"
-        print_status "Attempting to run from project root: $PROJECT_ROOT"
-        cd "$PROJECT_ROOT"
-        
-        if ! python -c "import comic_creator" 2>/dev/null; then
-            print_error "Could not find comic creator. Make sure you're in the project directory."
-            exit 1
-        fi
+    print_status "Found Python: $PYTHON_CMD"
+    
+    # Check Python version
+    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | grep -oE '[0-9]+\.[0-9]+')
+    print_status "Python version: $PYTHON_VERSION"
+    
+    # Check if we can run from project root
+    cd "$PROJECT_ROOT"
+    
+    # Check if comic_creator.py exists
+    if [ ! -f "comic_creator.py" ]; then
+        print_error "comic_creator.py not found in project root: $PROJECT_ROOT"
+        print_status "Make sure you're running this script from the examples directory"
+        exit 1
     fi
     
     print_status "✓ Comic creator found"
@@ -125,9 +145,9 @@ create_reference_examples() {
     # Note: These are optional and will only be used if --use-references is specified
     
     # Create Captain Nova character reference
-    if ! python -m comic_creator reference exists character "Captain Nova" 2>/dev/null; then
+    if ! $PYTHON_CMD -m comic_creator reference exists character "Captain Nova" 2>/dev/null; then
         print_status "Creating Captain Nova character reference..."
-        python -m comic_creator reference create-character \
+        $PYTHON_CMD -m comic_creator reference create-character \
             --name "Captain Nova" \
             --description "Superhero with energy powers, blue and gold costume, flowing cape, determined expression" \
             --poses "standing,flying,fighting" \
@@ -137,9 +157,9 @@ create_reference_examples() {
     fi
     
     # Create Shadowmaw villain reference  
-    if ! python -m comic_creator reference exists character "Shadowmaw" 2>/dev/null; then
+    if ! $PYTHON_CMD -m comic_creator reference exists character "Shadowmaw" 2>/dev/null; then
         print_status "Creating Shadowmaw character reference..."
-        python -m comic_creator reference create-character \
+        $PYTHON_CMD -m comic_creator reference create-character \
             --name "Shadowmaw" \
             --description "Dark villain with claws, shadow powers, menacing appearance, evil grin" \
             --poses "menacing,attacking,defeated" \
@@ -210,7 +230,7 @@ generate_all_examples() {
         "Character Consistency (without references)"
     
     # If references exist, generate with them
-    if python -m comic_creator reference exists character "Captain Nova" 2>/dev/null; then
+    if $PYTHON_CMD -m comic_creator reference exists character "Captain Nova" 2>/dev/null; then
         generate_comic \
             "$SCRIPT_DIR/references/with_characters/consistent_hero.txt" \
             "reference_consistent_hero_with_refs" \
