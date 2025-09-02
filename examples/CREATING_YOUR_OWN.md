@@ -4,28 +4,26 @@ This guide will help you write effective comic scripts for the Comic Book Creato
 
 ## Script Format Overview
 
-Comic scripts use YAML format with a specific structure:
+Comic scripts use **plain text format** following industry-standard comic script conventions:
 
-```yaml
-title: "Your Comic Title"
-author: "Your Name"
-genre: "superhero/noir/scifi/fantasy/etc"
-style: "art style description"
-style_guide: "Optional: Reference to style guide"
+```
+Title: Your Comic Title
 
-pages:
-  - number: 1
-    layout: "layout_type"
-    panels:
-      - number: 1
-        size: large/medium/small/splash
-        description: "Visual description"
-        characters: ["Character Name"]
-        location: "Location Name"
-        dialogue:
-          - character: "Character Name"
-            text: "What they say"
-            type: speech/thought/whisper/shout/narration/caption
+PAGE ONE (4 Panels)
+
+Panel 1
+Visual description of what we see in the panel.
+
+CHARACTER: What they say.
+
+Panel 2
+Another panel description here.
+
+CHARACTER (Thought Bubble): Internal thoughts.
+
+SFX: Sound effects like BOOM!
+
+CAPTION: Narrative text or scene setting.
 ```
 
 ## Planning Your Comic
@@ -64,13 +62,13 @@ pages:
 ### Be Visual, Not Literary
 
 **Good:**
-```yaml
-description: "Close-up of Sarah's hands shaking as she reaches for the door handle. Sweat visible on her palm."
+```
+Close-up of Sarah's hands shaking as she reaches for the door handle. Sweat visible on her palm.
 ```
 
 **Not Good:**
-```yaml
-description: "Sarah was nervous about what she might find."
+```
+Sarah was nervous about what she might find.
 ```
 
 ### Include Technical Details
@@ -82,15 +80,10 @@ description: "Sarah was nervous about what she might find."
 - "low angle" - from below (makes subject look powerful)
 - "dutch angle" - tilted (creates tension)
 
-**Lighting:**
-- "dramatic lighting" - high contrast
-- "soft lighting" - gentle, even
-- "backlighting" - lit from behind
-- "moonlight" - cool, blue tones
-- "neon lighting" - colorful city glow
-
-**Mood Keywords:**
-- tense, peaceful, ominous, hopeful, chaotic, serene, mysterious, epic
+**Setting Details:**
+- Time of day, weather, mood
+- Lighting conditions
+- Important props or background elements
 
 ## Character Writing
 
@@ -103,266 +96,302 @@ description: "Sarah was nervous about what she might find."
 
 ### Dialogue Types
 
-```yaml
-dialogue:
-  - character: "Hero"
-    text: "This ends now!"
-    type: speech           # Standard dialogue bubble
-    emotion: "determined"   # Affects character expression
+```
+CHARACTER: Standard speech bubble
 
-  - character: "Hero"
-    text: "What have I done?"
-    type: thought          # Thought bubble
+CHARACTER (Thought Bubble): Internal thoughts
 
-  - character: "Villain"  
-    text: "You fool!"
-    type: shout           # Jagged bubble, bold text
+CHARACTER (whispering): Quiet speech - small bubble
 
-  - character: "Hero"
-    text: "Stay close..."
-    type: whisper         # Dotted bubble, smaller text
+CHARACTER (shouting): LOUD SPEECH - jagged bubble
 
-  - character: ""
-    text: "CRASH!"
-    type: sfx             # Sound effect
+SFX: CRASH! - Sound effects
 
-  - character: "Narrator"
-    text: "Meanwhile, across town..."
-    type: narration       # Narrative box
-
-  - character: "Hero"
-    text: "I should have known."
-    type: caption         # Character narrative box
+CAPTION: Narrative text boxes
 ```
 
-## Panel Sizes and Layouts
+## Format Rules
 
-### Panel Size Guide
-
-**Splash** - Full page
-- Major reveals
-- Establishing shots  
-- Climactic moments
-- Issue openers
-
-**Large** - 1/2 to 2/3 page
-- Important action
-- Character introductions
-- Emotional beats
-
-**Medium** - 1/3 to 1/2 page  
-- Standard dialogue
-- Mid-action shots
-- Character reactions
-
-**Small** - 1/4 page or less
-- Quick cuts
-- Close-ups
-- Time passing
-- Reaction shots
-
-### Common Layouts
-
-**Six Panel Grid**
-```yaml
-layout: "six_panel_grid"
-# Good for: dialogue scenes, steady pacing
+### Page Headers
+```
+PAGE ONE (4 Panels)
+PAGE TWO (6 Panels) 
+PAGE THREE
 ```
 
-**Action Layout**  
-```yaml
-layout: "action_layout"
-# Good for: fight scenes, dynamic moments
+### Panel Structure
+```
+Panel 1
+[Panel description goes here]
+
+[Dialogue and effects follow]
+
+Panel 2
+[Next panel description]
 ```
 
-**Splash Opener**
-```yaml  
-layout: "splash_opener"
-# Good for: issue #1s, major reveals
+### Character Names
+- Always UPPERCASE in dialogue
+- Consistent spelling throughout
+- Use parentheses for dialogue modifiers: `CHARACTER (whispering):`
+
+### Sound Effects
+```
+SFX: BOOM!
+SFX: crash...
+SFX: WHOOSH!
+```
+
+### Captions
+```
+CAPTION: Narrative text
+CAPTION (CHARACTER): Character narration
 ```
 
 ## Using the Reference System
 
-### Character Consistency
+The reference system works with the plain text format to ensure character and location consistency.
+
+### Character References
 
 1. **Create Character References First:**
 ```bash
 python -m comic_creator reference create-character \
-  --name "Your Hero" \
-  --description "Detailed appearance description" \
-  --poses "standing,running,fighting" \
-  --expressions "happy,angry,sad"
+  --name "Captain Nova" \
+  --description "Superhero with blue and gold costume, cape" \
+  --poses "standing,flying,fighting"
 ```
 
-2. **Reference in Script:**
-```yaml
-characters: ["Your Hero"]  # Must match reference name exactly
+2. **Add Characters Line to Script:**
+```
+Title: My Comic
+
+CHARACTERS: Captain Nova, Shadowmaw
+
+PAGE ONE
 ```
 
-### Location Consistency
+3. **Reference in Panels:**
+```
+Panel 1
+CAPTAIN NOVA stands on the rooftop, cape flowing in the wind.
+```
+
+The system will automatically use the character reference to maintain consistent appearance.
+
+### Location References
 
 1. **Create Location References:**
 ```bash
 python -m comic_creator reference create-location \
-  --name "Hero Base" \
-  --description "High-tech underground facility" \
-  --angles "wide,console_view,entrance"
+  --name "Hero Headquarters" \
+  --description "High-tech underground base"
 ```
 
-2. **Reference in Script:**
-```yaml
-location: "Hero Base"  # Must match reference name
+2. **Reference in Panel Descriptions:**
+```
+Panel 1
+Interior of Hero Headquarters. Banks of computer monitors cast blue light across the room.
 ```
 
-### Style Guides
+## Example Script Structure
 
-1. **Create Style Guide:**
-```bash
-python -m comic_creator reference create-style \
-  --name "My Style" \
-  --art-style "realistic" \
-  --colors "#FF0000,#0000FF,#FFFFFF"
 ```
+Title: Example Comic
 
-2. **Reference in Script:**
-```yaml
-style_guide: "My Style"  # Applies to entire comic
+CHARACTERS: Hero, Villain
+
+PAGE ONE (4 Panels)
+
+Panel 1
+Wide shot of the city at night. Hero stands on a rooftop, looking down at the streets below.
+
+CAPTION: The city never sleeps. Neither does justice.
+
+Panel 2
+Close-up of Hero's determined face.
+
+HERO: Time to patrol.
+
+Panel 3
+Hero leaps from building to building, cape streaming behind.
+
+SFX: WHOOSH!
+
+Panel 4
+Hero lands near an alley where VILLAIN is threatening a civilian.
+
+HERO: Stop right there!
+
+VILLAIN: You're too late, hero!
+
+PAGE TWO (3 Panels)
+
+Panel 1
+SPLASH PAGE - Epic battle between Hero and Villain with energy blasts and debris flying.
+
+SFX: CRASH! BOOM! ZAP!
+
+Panel 2
+Hero stands victorious, Villain defeated on the ground.
+
+HERO: Justice prevails.
+
+Panel 3
+Hero helps up the grateful civilian as police arrive in the background.
+
+CIVILIAN: Thank you!
+
+CAPTION: Another night, another victory for good.
 ```
 
 ## Genre-Specific Tips
 
 ### Superhero
-- Dynamic poses and action
-- Bold colors and effects
-- Clear good vs evil
-- Inspiring dialogue
-- Lots of "BOOM!" and "POW!"
+- Dynamic action descriptions
+- Bold sound effects: "BOOM!", "POW!", "ZAP!"
+- Heroic poses and dramatic moments
+- Clear good vs evil conflicts
 
 ### Noir
-- High contrast lighting
-- Urban settings
-- Internal monologue
-- Moral ambiguity  
-- Atmospheric mood
+- Atmospheric descriptions with shadow and light
+- Internal monologue via captions
+- Urban, gritty settings
+- Morally ambiguous characters
 
 ### Sci-Fi
-- Technical descriptions
-- Futuristic elements
-- World-building details
-- Scientific concepts
-- Alien/tech terminology
+- Technical descriptions of futuristic elements
+- World-building through visual details
+- Alien or advanced technology
+- Scientific concepts explained visually
 
-### Fantasy
-- Magical elements
-- Medieval/ancient settings
-- Mythical creatures
-- Heroic quests
-- Poetic language
-
-### Horror
-- Building tension
-- Shadow and darkness
-- Sudden reveals
-- Psychological elements
-- Atmospheric dread
+### Slice of Life
+- Realistic, everyday settings
+- Character emotions and relationships
+- Quiet, intimate moments
+- Natural dialogue
 
 ## Common Mistakes to Avoid
 
 ### Too Much Dialogue
-```yaml
-# BAD - Wall of text
-dialogue:
-  - character: "Hero"
-    text: "I was just thinking about how we met three years ago when you saved my life and I realized that I needed to tell you how much that meant to me and how it changed everything about how I see the world and my place in it."
-    type: speech
-
-# GOOD - Broken up
-panels:
-  - description: "Hero's thoughtful expression"
-    dialogue:
-      - character: "Hero"
-        text: "Do you remember when we first met?"
-        type: speech
-  - description: "Flashback panel showing the rescue"  
-    dialogue:
-      - character: "Hero"
-        text: "You saved my life that day."
-        type: speech
-  - description: "Back to present, Hero looks grateful"
-    dialogue:
-      - character: "Hero"  
-        text: "It changed everything."
-        type: speech
+**Bad:**
+```
+Panel 1
+HERO: I was just thinking about how we met three years ago when you saved my life and I realized that I needed to tell you how much that meant to me and how it changed everything.
 ```
 
-### Unclear Panel Descriptions
-```yaml
-# BAD - Vague
-description: "Something exciting happens"
+**Good:**
+```
+Panel 1
+HERO: Do you remember when we first met?
 
-# GOOD - Specific  
-description: "The villain's laser beam cuts through the steel door, sparks flying as Hero dives for cover behind an overturned car"
+Panel 2
+Flashback panel - Hero being rescued.
+
+Panel 3
+Back to present. Hero looks grateful.
+
+HERO: You changed my life that day.
 ```
 
-### Ignoring Page Turns
-```yaml  
-# BAD - Reveal on same page as setup
-- number: 3  # Odd page
-  panels:
-    - description: "Hero opens the mysterious door"
-    - description: "Inside is the villain's secret lair!" # Should be on page 4!
+### Unclear Descriptions
+**Bad:**
+```
+Panel 1
+Something exciting happens.
+```
 
-# GOOD - Cliffhanger on odd page
-- number: 3  # Odd page  
-  panels:
-    - description: "Hero's hand reaches for the mysterious door handle"
-    - description: "The door creaks open, revealing..."
-- number: 4  # Even page
-  panels:  
-    - description: "The villain's secret lair!"
+**Good:**
+```
+Panel 1
+The villain's laser beam cuts through the steel door, sparks flying as Hero dives for cover behind an overturned car.
+```
+
+### Page Turn Problems
+**Bad:**
+```
+PAGE ONE (odd page)
+Panel 4
+Hero opens the door and sees the villain's secret lair! # Reveal on wrong page
+
+PAGE TWO (even page)
+Panel 1
+Hero fights the villain.
+```
+
+**Good:**
+```
+PAGE ONE (odd page)  
+Panel 4
+Hero's hand reaches for the mysterious door handle. # Cliffhanger
+
+PAGE TWO (even page)
+Panel 1
+The door opens to reveal the villain's secret lair! # Reveal
 ```
 
 ## Testing Your Script
 
 ### Before Generation
-1. Read aloud to check dialogue flow
-2. Verify character names match references exactly
-3. Check location names match references
-4. Ensure panel descriptions are visual
-5. Confirm page count fits intended format
+1. Read script aloud to check flow
+2. Verify character names are consistent
+3. Check page/panel numbering
+4. Ensure descriptions are visual
+5. Confirm dialogue fits comic format
+
+### Test Generation
+```bash
+python -m comic_creator generate examples/your_script.txt
+```
 
 ### After Generation
-1. Check character consistency across panels
-2. Verify locations look consistent
-3. Assess overall visual flow
-4. Note any needed reference improvements
-5. Adjust script based on results
+1. Check if characters look consistent
+2. Verify scenes match your vision
+3. Note any needed description improvements
+4. Test with reference system if needed
 
 ## Example Workflow
 
-1. **Plan** - Outline story beats
-2. **Create References** - Characters, locations, style
-3. **Write Script** - Following format guidelines
-4. **Test Generate** - Generate first few pages
-5. **Refine** - Adjust script and references
-6. **Full Generate** - Create complete comic
-7. **Review** - Check consistency and quality
+1. **Plan** - Outline your story beats
+2. **Write** - Create script in plain text format
+3. **Test** - Generate a few pages to see results
+4. **Create References** - If you need character consistency
+5. **Refine** - Adjust descriptions based on output
+6. **Generate** - Create full comic
 
 ## Resources
 
-- See `examples/genres/` for genre-specific examples
-- See `examples/references/` for reference system usage
+- See `examples/genres/` for different genre examples
 - See `examples/lengths/` for different story lengths
-- Check the main documentation for CLI commands
-- Refer to existing comics for pacing inspiration
+- See `examples/references/` for reference system usage
+- Look at existing comics for pacing inspiration
+- Study the included "Superpowers" example
 
-## Getting Help
+## Quick Reference
 
-If you're stuck:
-1. Start with the single-page examples
-2. Copy and modify existing examples  
-3. Focus on one element at a time (story, then characters, then dialogue)
-4. Test generate frequently to see results
-5. Use the reference system for consistency
+### Basic Format
+```
+Title: Comic Title
 
-Remember: Great comics are made through iteration. Start simple and build up complexity as you learn the system!
+PAGE ONE (Panel Count)
+
+Panel 1
+[Description]
+
+CHARACTER: Dialogue
+
+SFX: Sound
+
+CAPTION: Narration
+```
+
+### Special Elements
+- **Splash Page**: Single full-page panel
+- **Thought Bubble**: `CHARACTER (Thought Bubble):`
+- **Whisper**: `CHARACTER (whispering):`
+- **Shout**: `CHARACTER (shouting):`
+- **Flashback**: Mention in description
+- **Close-up**: Specify in description
+- **Wide shot**: Specify in description
+
+Remember: Start simple! Copy an existing example and modify it to tell your story. The system is designed to turn your written descriptions into visual comic panels.
