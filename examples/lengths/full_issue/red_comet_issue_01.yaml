@@ -1,0 +1,186 @@
+# Full Issue Example - "Red Comet #1: First Light"  
+# Standard 22-page comic book issue
+# Complete story arc with beginning, middle, and end
+# Demonstrates pacing, page turns, and issue structure
+
+title: "Red Comet #1: First Light"
+author: "Example Author"
+genre: "superhero"
+style: "modern comic book art, dynamic action, space themes, red and blue color scheme"
+
+pages:
+  - number: 1
+    layout: "splash_opener"
+    panels:
+      - number: 1
+        size: splash
+        description: "SPLASH PAGE! Stunning view of Earth from space. A mysterious red comet streaks toward the planet, leaving a brilliant crimson trail across the star field. Title logo integrated into the cosmic scene."
+        location: "Outer Space"
+        effects: ["comet_trail", "lens_flare", "cosmic_dust"]
+        mood: "epic_arrival"
+        dialogue:
+          - character: "Caption"
+            text: "For millennia, it traveled the cosmic void, seeking a worthy guardian..."
+            type: caption
+
+  - number: 2
+    layout: "establishing_character"
+    panels:
+      - number: 1
+        size: large
+        description: "Suburban neighborhood at dawn. MAYA RODRIGUEZ (17, backpack, rushing) runs down sidewalk toward school. Normal teenager, late for class."
+        characters: ["Maya Rodriguez"]
+        location: "Suburban Street"
+        time_of_day: "dawn"
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "Late again! Mom's going to kill me if I miss another astronomy test."
+            type: thought
+            
+      - number: 2
+        size: medium
+        description: "Maya stops abruptly, looking up at the sky. The red comet is visible even in daylight, growing larger."
+        characters: ["Maya Rodriguez"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "Whoa... that's not in any star chart I've studied."
+            type: speech
+            
+      - number: 3
+        size: small
+        description: "Close-up of Maya's eyes, reflecting the red glow of the approaching comet."
+        characters: ["Maya Rodriguez"]
+        effects: ["comet_reflection"]
+        
+      - number: 4
+        size: medium
+        description: "The comet suddenly changes trajectory, heading directly toward Maya's location."
+        effects: ["course_change", "speed_lines"]
+        sfx: "WHOOOOSH!"
+        
+      - number: 5
+        size: large
+        description: "IMPACT! The comet crashes in the nearby park in a brilliant explosion. Maya is thrown back by the shockwave."
+        characters: ["Maya Rodriguez"]
+        location: "Park"
+        effects: ["explosion", "shockwave", "debris"]
+        sfx: "KRAAAASH!"
+
+  - number: 3
+    layout: "discovery"
+    panels:
+      - number: 1
+        size: medium
+        description: "Maya approaches the crater cautiously, coughing from dust and smoke."
+        characters: ["Maya Rodriguez"]
+        location: "Crater Site"
+        effects: ["smoke", "settling_dust"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "Is everyone okay? Did anyone else see that?"
+            type: speech
+            
+      - number: 2
+        size: large
+        description: "In the center of the crater: a glowing red crystal fragment, pulsing with inner energy."
+        effects: ["crystal_glow", "energy_pulses"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "It's... beautiful. Like a star fell to Earth."
+            type: thought
+            
+      - number: 3
+        size: medium
+        description: "Maya reaches out to touch the crystal. Her hand glows as she makes contact."
+        characters: ["Maya Rodriguez"]
+        effects: ["hand_glow", "energy_transfer"]
+        
+      - number: 4
+        size: large
+        description: "ENERGY SURGE! Maya is engulfed in red cosmic energy. Her clothes transform into a sleek red and gold costume."
+        characters: ["Maya Rodriguez"]
+        effects: ["transformation", "costume_materialization", "cosmic_energy"]
+        sfx: "FWOOOSH!"
+        
+      - number: 5
+        size: small
+        description: "Maya looks at her hands, now glowing with stellar power."
+        characters: ["Maya Rodriguez"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "What's happening to me?"
+            type: speech
+            emotion: "awe"
+
+  # ... [Continue with pages 4-21 showing Maya learning her powers, first villain encounter, 
+  # character development, supporting cast introduction, and climactic battle] ...
+
+  - number: 22
+    layout: "issue_conclusion"
+    panels:
+      - number: 1
+        size: medium
+        description: "Maya, back in normal clothes, sits on her bedroom windowsill looking at the stars. The crystal fragment glows softly on her desk."
+        characters: ["Maya Rodriguez"]
+        location: "Maya's Bedroom"
+        time_of_day: "night"
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "I never believed in destiny before today."
+            type: thought
+            
+      - number: 2
+        size: small
+        description: "Close-up of the crystal fragment, still pulsing gently."
+        effects: ["gentle_glow"]
+        
+      - number: 3
+        size: medium
+        description: "Maya stands, determination in her eyes. She holds the crystal."
+        characters: ["Maya Rodriguez"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "If I have these powers, I have a responsibility to use them."
+            type: speech
+            
+      - number: 4
+        size: large
+        description: "Maya transforms into Red Comet costume, energy swirling around her."
+        characters: ["Maya Rodriguez"]
+        effects: ["transformation_energy"]
+        dialogue:
+          - character: "Maya Rodriguez"
+            text: "I am Red Comet. Guardian of Earth."
+            type: speech
+            emotion: "heroic"
+            
+      - number: 5
+        size: medium
+        description: "Red Comet leaps from her window into the night sky, leaving a red energy trail."
+        characters: ["Maya Rodriguez"]
+        effects: ["energy_trail", "motion_blur"]
+        
+      - number: 6
+        size: small
+        description: "Final panel: Red streak across the starry sky. End hook for next issue."
+        effects: ["star_field", "comet_trail"]
+        dialogue:
+          - character: "Caption"
+            text: "But in the depths of space, other comets stir... Next Issue: Sisters of the Stars!"
+            type: caption
+
+# ISSUE STRUCTURE NOTES:
+# Page 1: Splash page hook
+# Pages 2-5: Character introduction and inciting incident
+# Pages 6-10: Discovery and power manifestation
+# Pages 11-15: First conflict and learning curve
+# Pages 16-20: Climactic battle
+# Pages 21-22: Resolution and setup for next issue
+
+# This abbreviated example shows key pages. A full script would include:
+# - Supporting character introductions (parents, friends, teacher)
+# - First villain encounter (alien scout sent ahead of invasion)
+# - Learning to control powers montage
+# - Saving civilians from disaster
+# - Character growth and accepting responsibility
+# - Hints at larger cosmic threat for future issues

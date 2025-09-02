@@ -1,0 +1,142 @@
+# Sci-Fi Example - "Station Alpha-7"
+# Space station crisis story in 2 pages
+# Demonstrates futuristic settings, technical elements, alien characters
+
+title: "Station Alpha-7"
+author: "Example Author"
+genre: "science fiction"
+style: "futuristic sci-fi, clean lines, holographic displays, bioluminescent aliens, space vista backgrounds"
+
+pages:
+  - number: 1
+    layout: "scifi_layout"
+    panels:
+      - number: 1
+        size: large
+        description: "Majestic view of Space Station Alpha-7 orbiting a purple gas giant. The station is a massive ring structure with crystalline solar panels. Stars and nebulae visible in background."
+        location: "Space - Orbit of Kepler-442b"
+        mood: "awe-inspiring"
+        effects: ["lens_flare", "nebula_glow"]
+        dialogue:
+          - character: "Caption"
+            text: "Station Alpha-7. Humanity's furthest outpost. Population: 10,000 humans, 3,000 aliens."
+            type: caption
+            
+      - number: 2
+        size: medium
+        description: "Interior: Command center. COMMANDER YUKI TANAKA (40, Japanese, cybernetic eye) reviewing holographic displays showing station systems. Multiple floating screens with data."
+        characters: ["Commander Tanaka"]
+        location: "Command Center"
+        effects: ["holographic_displays", "data_streams"]
+        dialogue:
+          - character: "Commander Tanaka"
+            text: "Quantum core stable at 98.7%. Another quiet day in the void."
+            type: speech
+            
+      - number: 3
+        size: small
+        description: "Warning lights suddenly flash red. Holographic displays show alert symbols."
+        effects: ["red_alert", "warning_holograms"]
+        sfx: "ALERT! ALERT!"
+        
+      - number: 4
+        size: medium
+        description: "ZAX'THU (alien engineer, translucent blue skin, four arms, bioluminescent patches) rushes in, tentacle-like hair flowing with urgency."
+        characters: ["Zax'thu"]
+        dialogue:
+          - character: "Zax'thu"
+            text: "Commander! Unknown vessel approaching. It's not responding to hails."
+            type: speech
+            emotion: "urgent"
+            
+      - number: 5
+        size: medium
+        description: "View screen shows a mysterious organic-looking ship, part biological, part mechanical. Tendrils of energy crackling around it."
+        effects: ["energy_tendrils", "bio-mechanical_texture"]
+        dialogue:
+          - character: "Commander Tanaka"
+            text: "That's no design in our database. Alien origin?"
+            type: speech
+          - character: "Zax'thu"
+            text: "Not any species we know. It's... scanning us."
+            type: speech
+            
+      - number: 6
+        size: large
+        description: "The alien ship fires a beam of strange energy at the station. Windows show the beam hitting the hull, creating rippling effects like water."
+        effects: ["energy_beam", "ripple_effect", "shield_impact"]
+        sfx: "ZZZZAAAAPPPP!"
+        dialogue:
+          - character: "Commander Tanaka"
+            text: "All hands! Brace for impact!"
+            type: shout
+
+  - number: 2
+    layout: "action_scifi"
+    panels:
+      - number: 1
+        size: medium
+        description: "The beam passes through the shields harmlessly but station inhabitants begin floating. Gravity is failing. Tanaka and Zax'thu drift upward."
+        characters: ["Commander Tanaka", "Zax'thu"]
+        effects: ["zero_gravity", "floating_objects"]
+        dialogue:
+          - character: "Zax'thu"
+            text: "Fascinating! It's not attacking... it's altering our gravitational field!"
+            type: speech
+            
+      - number: 2
+        size: small
+        description: "Close-up of Tanaka's cybernetic eye analyzing data, streams of information reflected in the lens."
+        characters: ["Commander Tanaka"]
+        effects: ["data_analysis", "cyber_eye_glow"]
+        dialogue:
+          - character: "Commander Tanaka"
+            text: "It's a message... encoded in gravitational waves."
+            type: speech
+            
+      - number: 3
+        size: medium
+        description: "DR. ELENA ROSS (30, floating, tablet in hand) and her assistant robot SIGMA-5 (spherical, multiple sensor eyes) work at a console, both floating."
+        characters: ["Dr. Ross", "Sigma-5"]
+        dialogue:
+          - character: "Dr. Ross"
+            text: "Commander! I'm decoding it. It's... it's beautiful. Mathematical poetry."
+            type: speech
+          - character: "Sigma-5"
+            text: "Translation complete: 'We come seeking those who dream of stars.'"
+            type: speech
+            
+      - number: 4
+        size: large
+        description: "A holographic figure materializes in the command center - an ethereal being made of light and geometric patterns, neither solid nor wholly energy."
+        characters: ["Light Being"]
+        effects: ["materialization", "geometric_patterns", "light_refraction"]
+        mood: "wonder"
+        dialogue:
+          - character: "Light Being"
+            text: "Greetings, explorers. We are the Luminae. We have watched. You are ready."
+            type: speech
+            
+      - number: 5
+        size: medium
+        description: "The crew, still floating, looks on in awe. Through the viewports, more Luminae ships become visible, previously cloaked."
+        characters: ["Commander Tanaka", "Zax'thu", "Dr. Ross"]
+        effects: ["ships_decloaking", "light_patterns"]
+        dialogue:
+          - character: "Commander Tanaka"
+            text: "Ready? Ready for what?"
+            type: speech
+            
+      - number: 6
+        size: large
+        description: "The Luminae extends a hand made of pure light toward Tanaka. Behind it, a portal opens showing impossible vistas - cities of light, cosmic highways, civilizations beyond imagination."
+        characters: ["Light Being", "Commander Tanaka"]
+        effects: ["portal", "cosmic_vista", "light_bridge"]
+        mood: "epic"
+        dialogue:
+          - character: "Light Being"
+            text: "To join the Galactic Consciousness. Your species' isolation ends today."
+            type: speech
+          - character: "Narration"
+            text: "First Contact. Everything changes."
+            type: caption

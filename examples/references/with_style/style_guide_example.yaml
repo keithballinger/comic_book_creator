@@ -1,0 +1,107 @@
+# Style Guide Reference Example - "Noir Detective"
+# Demonstrates using style guide references for consistent art style
+# Shows how style guides affect the entire comic's visual approach
+
+title: "Noir Detective"
+author: "Example Author"
+genre: "noir"
+style_guide: "Film Noir Classic"  # Reference to a style guide you've created
+
+# NOTE: This example assumes you have created a style guide reference for:
+# - "Film Noir Classic" with specifications for lighting, colors, mood, etc.
+# Create this first using: python -m comic_creator reference create-style
+
+# The style guide will automatically influence:
+# - Color palette (high contrast, limited colors)
+# - Lighting approach (dramatic shadows, venetian blinds)
+# - Visual mood and atmosphere
+# - Character rendering style
+# - Background treatment
+
+pages:
+  - number: 1
+    layout: "noir_style"
+    panels:
+      - number: 1
+        size: large
+        description: "Rain-soaked city street at night. Detective JANE BLAKE walks under streetlights, trench coat collar up, cigarette smoke mixing with mist."
+        characters: ["Detective Blake"]
+        location: "City Street"
+        weather: "rain"
+        time_of_day: "night"
+        lighting: "streetlights"
+        # Style guide automatically applies: high contrast B&W, dramatic shadows, noir atmosphere
+        dialogue:
+          - character: "Jane Blake"
+            text: "This city eats souls for breakfast and spits out bones by midnight."
+            type: narration
+            
+      - number: 2
+        size: medium
+        description: "Interior of smoky bar. Jane sits at the bar, glass of whiskey catching the dim light. Venetian blind shadows stripe across her face."
+        characters: ["Detective Blake"]
+        location: "Dive Bar"
+        lighting: "venetian_blind_shadows"
+        # Style guide ensures consistent noir visual treatment
+        effects: ["cigarette_smoke"]
+        dialogue:
+          - character: "Bartender"
+            text: "Rough case?"
+            type: speech
+          - character: "Jane Blake"
+            text: "They're all rough in this business."
+            type: speech
+            
+      - number: 3
+        size: medium
+        description: "Close-up of Jane's face, half in shadow, half illuminated. Classic noir lighting emphasizing the moral ambiguity."
+        characters: ["Detective Blake"]
+        lighting: "half_shadow"
+        # Style guide maintains consistent dramatic lighting approach
+        dialogue:
+          - character: "Jane Blake"
+            text: "Three bodies, no witnesses, and a mayor who wants it buried."
+            type: narration
+            
+      - number: 4
+        size: medium
+        description: "Jane walks down a dark alley, silhouette against distant neon light. Long shadows stretch across wet pavement."
+        characters: ["Detective Blake"]
+        location: "Dark Alley"
+        lighting: "distant_neon"
+        effects: ["long_shadows", "wet_pavement"]
+        # Style guide ensures consistent use of shadows and limited color palette
+        
+      - number: 5
+        size: large
+        description: "Jane discovers a clue - a photograph in the rain. Lightning illuminates her shocked expression as she realizes the truth."
+        characters: ["Detective Blake"]
+        weather: "thunderstorm"
+        lighting: "lightning_flash"
+        # Style guide applies dramatic weather lighting in noir style
+        dialogue:
+          - character: "Jane Blake"
+            text: "No... this changes everything."
+            type: speech
+            emotion: "shocked"
+            
+      - number: 6
+        size: medium
+        description: "Final panel: Jane's silhouette walking away into fog, shoulders set with determination. Classic noir ending shot."
+        characters: ["Detective Blake"]
+        effects: ["fog", "silhouette"]
+        mood: "determined_exit"
+        # Style guide ensures consistent noir cinematography
+        dialogue:
+          - character: "Jane Blake"
+            text: "In this city of shadows, sometimes the truth is the darkest secret of all."
+            type: narration
+
+# STYLE GUIDE REFERENCE USAGE NOTES:
+# - Style guide name in header must match exactly with reference name
+# - Affects entire comic's visual approach automatically
+# - Influences color palette, lighting, mood, and rendering style
+# - Characters and locations still use their own references but with style filter applied
+# - Provides consistency across different artists or generation sessions
+# - Can be combined with character and location references
+# - Style guide settings override generic style descriptions

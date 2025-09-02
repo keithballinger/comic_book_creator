@@ -1,0 +1,142 @@
+# Noir Example - "Dark City Blues"
+# Classic detective noir in 2 pages
+# Demonstrates mood, internal monologue, shadow-heavy visuals
+
+title: "Dark City Blues"
+author: "Example Author"
+genre: "noir"
+style: "film noir, high contrast black and white, dramatic shadows, 1940s aesthetic, venetian blind shadows"
+
+pages:
+  - number: 1
+    layout: "noir_grid"
+    panels:
+      - number: 1
+        size: large
+        description: "Rain-soaked city street at night. Neon signs reflect in puddles. DETECTIVE SARAH MALONE (35, trench coat, fedora) stands under a streetlamp, cigarette smoke curling up."
+        characters: ["Sarah Malone"]
+        location: "City Street - Night"
+        weather: "heavy_rain"
+        lighting: "streetlamp, neon_signs"
+        mood: "melancholic"
+        dialogue:
+          - character: "Sarah Malone"
+            text: "This city... it gets under your skin like smoke in your lungs. You can never quite shake it clean."
+            type: narration
+            
+      - number: 2
+        size: medium
+        description: "Close-up of Sarah's face, half in shadow. Rain drops on her face mix with something that might be tears. Eyes focused on something off-panel."
+        characters: ["Sarah Malone"]
+        lighting: "half_shadow"
+        dialogue:
+          - character: "Sarah Malone"
+            text: "Three years since Tommy died. Three years, and his ghost still walks these streets."
+            type: narration
+            
+      - number: 3
+        size: small
+        description: "Sarah's hand reaching into coat pocket, pulling out a crumpled photograph."
+        sfx: "rustle"
+        
+      - number: 4
+        size: small
+        description: "The photograph: a younger Sarah with TOMMY, both smiling. The photo is water-damaged, creased."
+        dialogue:
+          - character: "Sarah Malone"
+            text: "We were going to get out. Leave this cesspool behind."
+            type: narration
+            
+      - number: 5
+        size: medium
+        description: "Bar entrance: 'The Blue Moon.' Neon sign flickering. Smoke drifting out the door."
+        location: "The Blue Moon Bar"
+        effects: ["flickering_neon", "smoke"]
+        dialogue:
+          - character: "Sarah Malone"
+            text: "But the city doesn't let go. It just takes and takes until there's nothing left."
+            type: narration
+            
+      - number: 6
+        size: medium
+        description: "Sarah enters the bar. Silhouettes of patrons visible through smoky atmosphere. Jazz music implied by musical notes in the air."
+        characters: ["Sarah Malone"]
+        location: "Bar Interior"
+        effects: ["heavy_smoke", "musical_notes"]
+        mood: "atmospheric"
+
+  - number: 2
+    layout: "noir_tension"
+    panels:
+      - number: 1
+        size: medium
+        description: "Interior bar. Sarah at the bar, bourbon in hand. BARTENDER (50s, world-weary) cleaning a glass. Venetian blind shadows stripe across everything."
+        characters: ["Sarah Malone", "Bartender"]
+        lighting: "venetian_blind_shadows"
+        dialogue:
+          - character: "Bartender"
+            text: "Rough night, Detective?"
+            type: speech
+          - character: "Sarah Malone"
+            text: "They're all rough nights, Eddie."
+            type: speech
+            
+      - number: 2
+        size: small
+        description: "Close-up of bourbon swirling in glass."
+        dialogue:
+          - character: "Sarah Malone"
+            text: "I got a tip. About Tommy's killer."
+            type: narration
+            
+      - number: 3
+        size: medium
+        description: "A MYSTERIOUS FIGURE in the corner booth, face obscured by shadow and smoke. Only the glowing tip of a cigarette visible."
+        characters: ["Mysterious Figure"]
+        lighting: "deep_shadow"
+        effects: ["cigarette_glow"]
+        mood: "menacing"
+        
+      - number: 4
+        size: medium
+        description: "Sarah approaches the booth, hand subtly near her concealed gun. Tension in her posture."
+        characters: ["Sarah Malone"]
+        dialogue:
+          - character: "Sarah Malone"
+            text: "In this city, information comes at a price. Usually blood."
+            type: narration
+            
+      - number: 5
+        size: large
+        description: "The figure leans forward slightly, still in shadow. A manila envelope slides across the table. Sarah's reflection visible in the wet table surface."
+        characters: ["Sarah Malone", "Mysterious Figure"]
+        dialogue:
+          - character: "Mysterious Figure"
+            text: "Some ghosts should stay buried, Detective."
+            type: speech
+          - character: "Sarah Malone"
+            text: "Not this one."
+            type: speech
+            emotion: "determined"
+            
+      - number: 6
+        size: medium
+        description: "Sarah opens the envelope. Her eyes widen. The photograph inside partially visible - it's shocking but we don't see what."
+        characters: ["Sarah Malone"]
+        dialogue:
+          - character: "Sarah Malone"
+            text: "No... this can't be..."
+            type: whisper
+            
+      - number: 7
+        size: small
+        description: "Final panel: Rain against the window, distorting the neon lights outside."
+        weather: "rain"
+        mood: "ominous"
+        dialogue:
+          - character: "Sarah Malone"
+            text: "In this city, the dead don't rest. They just wait."
+            type: narration
+          - character: "Caption"
+            text: "End of Part One"
+            type: caption
