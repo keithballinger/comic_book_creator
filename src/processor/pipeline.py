@@ -113,6 +113,11 @@ class ProcessingPipeline:
             output_path = self.output_dir / output_name
             output_path.mkdir(parents=True, exist_ok=True)
             
+            # Set up debug directory for prompts
+            debug_dir = output_path / "debug"
+            if self.page_generator:
+                self.page_generator.debug_dir = debug_dir
+            
             # Process pages with single-pass generation
             generated_pages = []
             previous_page_images = []
@@ -122,9 +127,10 @@ class ProcessingPipeline:
                     logger.info(f"Processing page {page.number} with {len(page.panels)} panels")
                     
                     # Generate complete page in single pass
+                    # Pass all previous pages for maximum consistency
                     page_image_bytes = await self.page_generator.generate_page(
                         page=page,
-                        previous_pages=previous_page_images[-2:] if previous_page_images else None,
+                        previous_pages=previous_page_images if previous_page_images else None,
                         style_context=self._get_style_context(options)
                     )
                     
@@ -141,6 +147,12 @@ class ProcessingPipeline:
                     )
                     generated_pages.append(generated_page)
             
+            # Save combined debug prompts
+            if self.page_generator and self.page_generator.debug_dir:
+                debug_path = Path(self.page_generator.debug_dir)
+                if debug_path.exists():
+                    self._save_combined_prompts(debug_path, script)
+            
             # Create processing result
             processing_time = time.time() - start_time
             result = ProcessingResult(
@@ -153,6 +165,7 @@ class ProcessingPipeline:
                     'total_pages': len(generated_pages),
                     'total_panels': sum(len(p.panels) for p in generated_pages),
                     'output_directory': str(self.output_dir),
+                    'current_output_path': str(output_path),  # Store the actual processing output path
                 }
             )
             
@@ -282,7 +295,8 @@ class ProcessingPipeline:
         client = GeminiClient(api_key=self.config.api_key)
         
         # Create page generator (much simpler than panel generator)
-        self.page_generator = PageGenerator(gemini_client=client)
+        # Debug directory will be set later when output path is created
+        self.page_generator = PageGenerator(gemini_client=client, debug_dir=None)
     
     # TextRenderer methods removed - Gemini handles all text
     
@@ -302,6 +316,32 @@ class ProcessingPipeline:
                 characters.update(panel.characters)
         
         return sorted(list(characters))
+    
+    def _save_combined_prompts(self, debug_dir: Path, script: ComicScript):
+        """Save all prompts combined into a single file.
+        
+        Args:
+            debug_dir: Debug directory path
+            script: Comic script
+        """
+        try:
+            # Combine all individual prompt files
+            combined_file = debug_dir / "all_prompts_combined.txt"
+            with open(combined_file, 'w') as outfile:
+                outfile.write(f"=== COMBINED PROMPTS FOR: {script.title} ===\n")
+                outfile.write(f"=== Total Pages: {len(script.pages)} ===\n\n")
+                
+                # Read and combine all page prompt files
+                for page_file in sorted(debug_dir.glob("page_*_prompt.txt")):
+                    with open(page_file, 'r') as infile:
+                        outfile.write(infile.read())
+                        outfile.write("\n" + "="*80 + "\n\n")
+                
+                outfile.write("=== END OF ALL PROMPTS ===\n")
+            
+            logger.info(f"Saved combined prompts to {combined_file}")
+        except Exception as e:
+            logger.warning(f"Could not save combined prompts: {e}")
     
     def _should_process_page(
         self,
@@ -373,11 +413,16 @@ class ProcessingPipeline:
         import io
         import json
         
-        # Create output directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_name = output_name or f"comic_{timestamp}"
-        output_path = self.output_dir / output_name
-        output_path.mkdir(parents=True, exist_ok=True)
+        # Use existing output directory if available, otherwise create new one
+        if result.metadata and 'current_output_path' in result.metadata:
+            output_path = Path(result.metadata['current_output_path'])
+            # Extract timestamp from existing path for metadata
+            timestamp = output_path.name.split('_')[-1] if '_' in output_path.name else datetime.now().strftime("%Y%m%d_%H%M%S")
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_name = output_name or f"comic_{timestamp}"
+            output_path = self.output_dir / output_name
+            output_path.mkdir(parents=True, exist_ok=True)
         
         # Save metadata
         metadata = {
