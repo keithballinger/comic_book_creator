@@ -17,6 +17,7 @@ from src.config import ConfigLoader
 from src.processor.pipeline import ProcessingPipeline
 from src.output import PageCompositor
 from src.models import ProcessingOptions, StyleConfig
+from src.cli_reference import reference
 
 # Setup rich console
 console = Console()
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 def cli():
     """Comic Book Creator - Transform scripts into illustrated comics using AI."""
     pass
+
+# Add reference commands as a subgroup
+cli.add_command(reference)
 
 
 @cli.command()
