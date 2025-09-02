@@ -21,8 +21,18 @@ examples/
 
 ## Quick Start
 
-### Running an Example
+### Running Examples
 
+**Generate All Examples:**
+```bash
+# Simple: Generate all examples at once
+./examples/generate_all.sh
+
+# Advanced: Full featured generation with options
+./examples/build_examples.sh --create-references
+```
+
+**Generate Individual Examples:**
 ```bash
 # Run a simple superhero example
 python -m comic_creator generate examples/genres/superhero/hero_rises.txt
@@ -30,7 +40,7 @@ python -m comic_creator generate examples/genres/superhero/hero_rises.txt
 # Generate with references for consistency
 python -m comic_creator generate examples/references/with_characters/consistent_hero.txt --use-references
 
-# Generate the original superpowers example
+# Generate the original superpowers example  
 python -m comic_creator generate examples/superpowers/superpowers.txt
 ```
 
