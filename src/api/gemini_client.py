@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional
 import logging
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
+from PIL import Image
+from io import BytesIO
 
 from src.models import Panel, CharacterReference
 
@@ -109,6 +112,90 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Error generating panel image: {e}")
             raise
+    
+    async def generate_page_image(
+        self,
+        prompt: str,
+        context_images: Optional[List[Image.Image]] = None,
+        style_config: Optional[Dict[str, Any]] = None
+    ) -> bytes:
+        """Generate a complete comic page in a single pass.
+        
+        Args:
+            prompt: Detailed prompt describing the entire page
+            context_images: Previous page images for context (PIL Images)
+            style_config: Style configuration dictionary
+            
+        Returns:
+            Generated page image as bytes
+        """
+        try:
+            # Build contents list for multimodal input
+            contents = []
+            
+            # Add previous pages as context
+            if context_images:
+                for img in context_images:
+                    # PIL Images are directly supported by the new API
+                    contents.append(img)
+                    logger.debug(f"Added context image: {img.size}")
+            
+            # Add style configuration to prompt if provided
+            full_prompt = prompt
+            if style_config:
+                style_instructions = self._build_style_prompt(style_config)
+                full_prompt = f"{style_instructions}\n\n{prompt}"
+            
+            # Add the text prompt
+            contents.append(full_prompt)
+            
+            logger.info("Calling Gemini API for page generation")
+            
+            # Use the new genai.Client API
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash-image-preview",
+                contents=contents
+            )
+            
+            # Extract generated image from response
+            if response.candidates:
+                for candidate in response.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                if hasattr(part.inline_data, 'data'):
+                                    logger.info("Successfully generated page image")
+                                    return part.inline_data.data
+            
+            raise ValueError("No image generated from API")
+            
+        except Exception as e:
+            logger.error(f"Error generating page image: {e}")
+            raise
+    
+    def _build_style_prompt(self, style_config: Dict[str, Any]) -> str:
+        """Build style instructions from configuration.
+        
+        Args:
+            style_config: Style configuration dictionary
+            
+        Returns:
+            Style prompt string
+        """
+        parts = []
+        
+        if 'style' in style_config:
+            parts.append(f"Art style: {style_config['style']} comic book style")
+        
+        if 'quality' in style_config:
+            quality_map = {
+                'draft': 'Quick sketch quality',
+                'standard': 'Professional comic book quality',
+                'high': 'Highly detailed premium comic book quality'
+            }
+            parts.append(quality_map.get(style_config['quality'], 'Professional quality'))
+        
+        return "\n".join(parts) if parts else ""
     
     async def enhance_panel_description(
         self, 

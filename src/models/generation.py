@@ -49,12 +49,13 @@ class GeneratedPanel:
 
 @dataclass
 class GeneratedPage:
-    """A generated comic page with composed panels."""
+    """A generated comic page."""
     page: Any  # Page from script.py
-    panels: List[GeneratedPanel]
-    composed_image: Optional[bytes] = None
+    panels: List[GeneratedPanel]  # Empty for single-pass generation
+    image_data: Optional[bytes] = None  # Complete page image for single-pass
+    composed_image: Optional[bytes] = None  # Legacy: for multi-panel composition
     composition_time: float = 0.0
-    generation_time: float = 0.0  # Total time to generate all panels
+    generation_time: float = 0.0  # Total time to generate page
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
@@ -70,6 +71,10 @@ class GeneratedPage:
     
     def is_complete(self) -> bool:
         """Check if page generation is complete."""
+        # For single-pass generation, check if we have the image_data
+        if self.image_data:
+            return True
+        # For legacy multi-panel generation
         return (
             len(self.panels) == len(self.page.panels) and
             all(p.image_data for p in self.panels) and

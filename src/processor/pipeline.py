@@ -17,10 +17,12 @@ from src.models import (
     ValidationResult,
 )
 from src.parser import ScriptParser, ScriptValidator
-from src.generator import PanelGenerator
+from src.generator.page_generator import PageGenerator
 # TextRenderer removed - Gemini handles all text
 from src.api import GeminiClient, RateLimiter
 from src.config import ConfigLoader
+from PIL import Image
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +33,19 @@ class ProcessingPipeline:
     def __init__(
         self,
         config: Optional[ConfigLoader] = None,
-        panel_generator: Optional[PanelGenerator] = None,
+        page_generator: Optional[PageGenerator] = None,
         output_dir: str = "output"
     ):
         """Initialize processing pipeline.
         
         Args:
             config: Configuration loader
-            panel_generator: Panel generator instance
+            page_generator: Page generator instance
             output_dir: Output directory for generated comics
         """
         self.config_loader = config or ConfigLoader()
         self.config = self.config_loader.load()  # Load the actual config
-        self.panel_generator = panel_generator
+        self.page_generator = page_generator
         # TextRenderer removed - Gemini handles all text
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -101,32 +103,41 @@ class ProcessingPipeline:
                 for warning in validation_result.warnings:
                     logger.warning(f"Script warning: {warning}")
             
-            # Initialize panel generator if not provided
-            if not self.panel_generator:
+            # Initialize page generator if not provided
+            if not self.page_generator:
                 await self._initialize_generator(script, options)
             
-            # Set up debug output directory
+            # Set up output directory
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_name = f"comic_{timestamp}"
             output_path = self.output_dir / output_name
-            debug_dir = output_path / "debug"
-            self.panel_generator.set_debug_output_dir(str(debug_dir))
+            output_path.mkdir(parents=True, exist_ok=True)
             
-            # Extract and initialize characters
-            characters = self._extract_characters(script)
-            if characters:
-                logger.info(f"Initializing {len(characters)} characters")
-                await self.panel_generator.initialize_characters(characters)
-            
-            # Process pages
+            # Process pages with single-pass generation
             generated_pages = []
+            previous_page_images = []
+            
             for page in script.pages:
                 if self._should_process_page(page, options):
-                    logger.info(f"Processing page {page.number}")
-                    generated_page = await self.process_page(
-                        page,
-                        previous_pages=generated_pages,
-                        options=options
+                    logger.info(f"Processing page {page.number} with {len(page.panels)} panels")
+                    
+                    # Generate complete page in single pass
+                    page_image_bytes = await self.page_generator.generate_page(
+                        page=page,
+                        previous_pages=previous_page_images[-2:] if previous_page_images else None,
+                        style_context=self._get_style_context(options)
+                    )
+                    
+                    # Convert to PIL Image for context
+                    page_image = Image.open(BytesIO(page_image_bytes))
+                    previous_page_images.append(page_image)
+                    
+                    # Create GeneratedPage object
+                    generated_page = GeneratedPage(
+                        page=page,
+                        panels=[],  # No individual panels in single-pass
+                        image_data=page_image_bytes,
+                        generation_time=0  # Will be tracked by page_generator
                     )
                     generated_pages.append(generated_page)
             
@@ -238,38 +249,40 @@ class ProcessingPipeline:
         
         return generated_panel
     
+    def _get_style_context(self, options: ProcessingOptions) -> Optional[Dict]:
+        """Get style context for page generation.
+        
+        Args:
+            options: Processing options
+            
+        Returns:
+            Style configuration dictionary or None
+        """
+        if options.style_preset:
+            # Return style configuration based on preset
+            # This could be expanded to load actual style configs
+            return {
+                'style': options.style_preset,
+                'quality': options.quality
+            }
+        return None
+    
     async def _initialize_generator(
         self,
         script: ComicScript,
         options: ProcessingOptions
     ):
-        """Initialize panel generator with configuration.
+        """Initialize page generator with configuration.
         
         Args:
             script: Comic script
             options: Processing options
         """
-        from src.generator import ConsistencyManager
-        
-        # Create components
+        # Create Gemini client
         client = GeminiClient(api_key=self.config.api_key)
-        consistency_manager = ConsistencyManager()
-        rate_limiter = RateLimiter(
-            calls_per_minute=self.config.max_concurrent_requests * 10  # Approximate rate limit
-        )
         
-        # Create panel generator
-        self.panel_generator = PanelGenerator(
-            gemini_client=client,
-            consistency_manager=consistency_manager,
-            rate_limiter=rate_limiter
-        )
-        
-        # Set style if configured
-        if style_name := options.style_preset:
-            # For now, just use the style name - we can expand this later
-            # to load actual style configurations
-            pass
+        # Create page generator (much simpler than panel generator)
+        self.page_generator = PageGenerator(gemini_client=client)
     
     # TextRenderer methods removed - Gemini handles all text
     
@@ -378,45 +391,39 @@ class ProcessingPipeline:
         with open(output_path / 'metadata.json', 'w') as f:
             json.dump(metadata, f, indent=2)
         
-        # Save pages and panels
+        # Save pages
         if result.generated_pages:
-            # Initialize compositor for page layout
-            from src.output import PageCompositor
-            compositor = PageCompositor(
-                page_width=self.config.output.page_size[0],
-                page_height=self.config.output.page_size[1],
-                dpi=self.config.output.dpi,
-                layout_style='standard'
-            )
-            
             for page_idx, gen_page in enumerate(result.generated_pages, 1):
-                page_dir = output_path / f"page_{page_idx:03d}"
-                page_dir.mkdir(exist_ok=True)
-                
-                # Save individual panels
-                for panel_idx, gen_panel in enumerate(gen_page.panels, 1):
-                    if gen_panel.image_data:
-                        # Save panel image
-                        panel_path = page_dir / f"panel_{panel_idx:03d}.png"
-                        
-                        try:
-                            image = Image.open(io.BytesIO(gen_panel.image_data))
-                            image.save(panel_path)
-                            logger.debug(f"Saved panel to {panel_path}")
-                        except Exception as e:
-                            logger.error(f"Error saving panel: {e}")
-                
-                # Compose and save complete page
-                try:
-                    page_image = compositor.compose_page(
-                        gen_page.panels,
-                        gen_page.page
-                    )
+                # For single-pass generation, we have the complete page image
+                if gen_page.image_data:
                     page_path = output_path / f"page_{page_idx:03d}_complete.png"
-                    page_image.save(page_path)
-                    logger.info(f"Saved composed page to {page_path}")
-                except Exception as e:
-                    logger.error(f"Error composing page: {e}")
+                    try:
+                        image = Image.open(io.BytesIO(gen_page.image_data))
+                        image.save(page_path)
+                        logger.info(f"Saved page {page_idx} to {page_path}")
+                    except Exception as e:
+                        logger.error(f"Error saving page: {e}")
+                
+                # Legacy: Handle multi-panel pages if they exist
+                elif gen_page.panels:
+                    from src.output import PageCompositor
+                    compositor = PageCompositor(
+                        page_width=self.config.output.page_size[0],
+                        page_height=self.config.output.page_size[1],
+                        dpi=self.config.output.dpi,
+                        layout_style='standard'
+                    )
+                    
+                    try:
+                        page_image = compositor.compose_page(
+                            gen_page.panels,
+                            gen_page.page
+                        )
+                        page_path = output_path / f"page_{page_idx:03d}_complete.png"
+                        page_image.save(page_path)
+                        logger.info(f"Saved composed page to {page_path}")
+                    except Exception as e:
+                        logger.error(f"Error composing page: {e}")
             
             # Generate complete comic book file if requested
             if 'pdf' in self.config.output.formats:
