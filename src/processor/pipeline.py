@@ -107,6 +107,13 @@ class ProcessingPipeline:
             if not self.panel_generator:
                 await self._initialize_generator(script, options)
             
+            # Set up debug output directory
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_name = f"comic_{timestamp}"
+            output_path = self.output_dir / output_name
+            debug_dir = output_path / "debug"
+            self.panel_generator.set_debug_output_dir(str(debug_dir))
+            
             # Extract and initialize characters
             characters = self._extract_characters(script)
             if characters:

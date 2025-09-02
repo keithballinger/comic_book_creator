@@ -42,6 +42,7 @@ class PanelGenerator:
         self.consistency_manager = consistency_manager or ConsistencyManager()
         self.rate_limiter = rate_limiter or RateLimiter(calls_per_minute=30)
         self.reference_builder = ReferenceSheetBuilder()
+        self.debug_output_dir = None  # Will be set per session
         
         # Track generation statistics
         self.stats = {
@@ -183,6 +184,18 @@ class PanelGenerator:
         
         return generated_panels
     
+    def set_debug_output_dir(self, debug_dir: str):
+        """Set the debug output directory for this session.
+        
+        Args:
+            debug_dir: Directory to save debug output
+        """
+        from pathlib import Path
+        self.debug_output_dir = Path(debug_dir) if debug_dir else None
+        if self.debug_output_dir:
+            self.debug_output_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Debug output enabled: {self.debug_output_dir}")
+    
     async def generate_page_with_references(
         self,
         page: Page,
@@ -256,6 +269,25 @@ class PanelGenerator:
             Return ONLY the panel image, not the entire page.
             """
             
+            # Save debug files if debug directory specified
+            if self.debug_output_dir:
+                # Save the reference sheet
+                ref_sheet_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_reference_sheet.png"
+                ref_sheet_img = Image.open(io.BytesIO(reference_sheet))
+                ref_sheet_img.save(ref_sheet_path)
+                logger.debug(f"Saved reference sheet to {ref_sheet_path}")
+                
+                # Save the prompt
+                prompt_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_prompt.txt"
+                with open(prompt_path, 'w') as f:
+                    f.write(prompt)
+                logger.debug(f"Saved prompt to {prompt_path}")
+                
+                # Save the page state before this panel
+                page_state_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_page_before.png"
+                page_canvas.save(page_state_path)
+                logger.debug(f"Saved page state to {page_state_path}")
+            
             try:
                 # Generate panel with reference sheet
                 panel_image_data = await self.rate_limiter.execute_with_retry(
@@ -275,6 +307,18 @@ class PanelGenerator:
                 
                 # Add panel to page canvas
                 page_canvas.paste(panel_img, (panel_position[0], panel_position[1]))
+                
+                # Save debug output if specified
+                if self.debug_output_dir:
+                    # Save the generated panel
+                    panel_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_generated.png"
+                    panel_img.save(panel_path)
+                    logger.debug(f"Saved generated panel to {panel_path}")
+                    
+                    # Save the page state after adding this panel
+                    page_after_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_page_after.png"
+                    page_canvas.save(page_after_path)
+                    logger.debug(f"Saved page state after panel to {page_after_path}")
                 
                 # Update reference builder with new panel
                 self.reference_builder.update_page_state(page_canvas)
