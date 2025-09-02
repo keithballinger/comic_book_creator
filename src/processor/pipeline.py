@@ -455,10 +455,20 @@ class ProcessingPipeline:
         
         # Save pages and panels
         if result.generated_pages:
+            # Initialize compositor for page layout
+            from src.output import PageCompositor
+            compositor = PageCompositor(
+                page_width=self.config.output.page_size[0],
+                page_height=self.config.output.page_size[1],
+                dpi=self.config.output.dpi,
+                layout_style='standard'
+            )
+            
             for page_idx, gen_page in enumerate(result.generated_pages, 1):
                 page_dir = output_path / f"page_{page_idx:03d}"
                 page_dir.mkdir(exist_ok=True)
                 
+                # Save individual panels
                 for panel_idx, gen_panel in enumerate(gen_page.panels, 1):
                     if gen_panel.image_data:
                         # Save panel image
@@ -470,6 +480,65 @@ class ProcessingPipeline:
                             logger.debug(f"Saved panel to {panel_path}")
                         except Exception as e:
                             logger.error(f"Error saving panel: {e}")
+                
+                # Compose and save complete page
+                try:
+                    page_image = compositor.compose_page(
+                        gen_page.panels,
+                        gen_page.page
+                    )
+                    page_path = output_path / f"page_{page_idx:03d}_complete.png"
+                    page_image.save(page_path)
+                    logger.info(f"Saved composed page to {page_path}")
+                except Exception as e:
+                    logger.error(f"Error composing page: {e}")
+            
+            # Generate complete comic book file if requested
+            if 'pdf' in self.config.output.formats:
+                self._generate_pdf(output_path, result)
+            if 'cbz' in self.config.output.formats:
+                self._generate_cbz(output_path, result)
         
         logger.info(f"Results saved to {output_path}")
         return output_path
+    
+    def _generate_pdf(self, output_path: Path, result: ProcessingResult):
+        """Generate PDF file from composed pages."""
+        try:
+            from PIL import Image
+            import img2pdf
+            
+            # Collect all composed page files
+            page_files = sorted(output_path.glob("page_*_complete.png"))
+            
+            if page_files:
+                pdf_path = output_path / f"{result.script.title or 'comic'}.pdf"
+                
+                # Convert to PDF
+                with open(pdf_path, "wb") as f:
+                    f.write(img2pdf.convert([str(p) for p in page_files]))
+                
+                logger.info(f"Generated PDF: {pdf_path}")
+        except ImportError:
+            logger.warning("img2pdf not installed. Skipping PDF generation.")
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+    
+    def _generate_cbz(self, output_path: Path, result: ProcessingResult):
+        """Generate CBZ (Comic Book Zip) file."""
+        try:
+            import zipfile
+            
+            # Collect all composed page files
+            page_files = sorted(output_path.glob("page_*_complete.png"))
+            
+            if page_files:
+                cbz_path = output_path / f"{result.script.title or 'comic'}.cbz"
+                
+                with zipfile.ZipFile(cbz_path, 'w', zipfile.ZIP_DEFLATED) as cbz:
+                    for i, page_file in enumerate(page_files, 1):
+                        cbz.write(page_file, f"page_{i:03d}.png")
+                
+                logger.info(f"Generated CBZ: {cbz_path}")
+        except Exception as e:
+            logger.error(f"Error generating CBZ: {e}")
