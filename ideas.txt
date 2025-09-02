@@ -1,0 +1,2 @@
+create comic book from movie script
+accomodate panel composition and layout instructions
