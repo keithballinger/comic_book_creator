@@ -70,8 +70,8 @@ class TestGeminiClient:
         
         # Check that style was included in prompt
         call_args = mock_client.client.models.generate_images.call_args
-        assert 'comic book' in call_args[1]['prompt']
-        assert 'vibrant' in call_args[1]['prompt']
+        assert 'comic book' in call_args.kwargs['prompt']
+        assert 'vibrant' in call_args.kwargs['prompt']
     
     @pytest.mark.asyncio
     async def test_generate_panel_image_error(self, mock_client):

@@ -28,7 +28,7 @@ class GeminiClient:
             
         self.client = genai.Client(api_key=self.api_key)
         self.text_model = 'gemini-2.0-flash-exp'  # Using latest available model
-        self.image_model = 'imagen-3.0-generate-001'  # Image generation model
+        self.image_model = 'imagen-3'  # Image generation model (when available)
         
     async def generate_panel_image(
         self, 
@@ -52,13 +52,21 @@ class GeminiClient:
             
             # Run synchronous API call in executor to avoid blocking
             loop = asyncio.get_event_loop()
+            
+            # Configure image generation
+            from google.genai.types import GenerateImagesConfig
+            config = GenerateImagesConfig(
+                numberOfImages=1,
+                aspectRatio='3:4',  # Comic panel aspect ratio
+                imageSize='1024x1024'
+            )
+            
             response = await loop.run_in_executor(
                 None,
                 lambda: self.client.models.generate_images(
                     model=self.image_model,
                     prompt=full_prompt,
-                    number_of_images=1,
-                    aspect_ratio='3:4'  # Comic panel aspect ratio
+                    config=config
                 )
             )
             
@@ -76,7 +84,12 @@ class GeminiClient:
                 
         except Exception as e:
             logger.error(f"Error generating panel image: {e}")
-            raise
+            # For now, raise a clear error message about image generation not being available
+            raise NotImplementedError(
+                "Image generation is not yet available via the Gemini API. "
+                "The imagen-3 model is expected to be released soon. "
+                "Text generation and panel description enhancement are fully functional."
+            )
     
     async def enhance_panel_description(
         self, 
