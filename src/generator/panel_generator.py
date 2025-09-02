@@ -1,14 +1,15 @@
 """Panel generator for creating comic book panels."""
 
 import asyncio
-import hashlib
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-import json
 
 from src.api import GeminiClient, RateLimiter
 from src.generator.consistency import ConsistencyManager
+from src.generator.reference_builder import ReferenceSheetBuilder
+from PIL import Image
+import io
 from src.models import (
     GeneratedPanel,
     Panel,
@@ -16,7 +17,6 @@ from src.models import (
     CharacterReference,
     StyleConfig,
 )
-from src.processor.cache_manager import CacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ class PanelGenerator:
         self,
         gemini_client: Optional[GeminiClient] = None,
         consistency_manager: Optional[ConsistencyManager] = None,
-        cache_manager: Optional[CacheManager] = None,
         rate_limiter: Optional[RateLimiter] = None
     ):
         """Initialize panel generator.
@@ -41,14 +40,14 @@ class PanelGenerator:
         """
         self.client = gemini_client or GeminiClient()
         self.consistency_manager = consistency_manager or ConsistencyManager()
-        self.cache = cache_manager or CacheManager()
         self.rate_limiter = rate_limiter or RateLimiter(calls_per_minute=30)
+        self.reference_builder = ReferenceSheetBuilder()
+        self.debug_output_dir = None  # Will be set per session
         
         # Track generation statistics
         self.stats = {
             'panels_generated': 0,
-            'cache_hits': 0,
-            'api_calls': 0,
+                        'api_calls': 0,
             'total_time': 0.0,
             'errors': 0,
         }
@@ -58,7 +57,6 @@ class PanelGenerator:
         panel: Panel,
         page_context: Optional[Page] = None,
         previous_panels: Optional[List[GeneratedPanel]] = None,
-        skip_cache: bool = False
     ) -> GeneratedPanel:
         """Generate a single panel with consistency.
         
@@ -66,8 +64,6 @@ class PanelGenerator:
             panel: Panel to generate
             page_context: Page containing the panel
             previous_panels: Previously generated panels
-            skip_cache: Skip cache lookup
-            
         Returns:
             Generated panel with image data
         """
@@ -75,18 +71,7 @@ class PanelGenerator:
         start_time = time.time()
         
         try:
-            # Generate cache key
-            cache_key = self._generate_cache_key(panel)
-            
-            # Check cache first unless skipped
-            if not skip_cache:
-                cached = await self.cache.get(cache_key)
-                if cached:
-                    logger.info(f"Cache hit for panel {panel.number}")
-                    self.stats['cache_hits'] += 1
-                    
-                    # Deserialize cached panel
-                    return self._deserialize_panel(cached)
+            # No caching - removed
             
             # Enhance description with context
             enhanced_desc = await self._enhance_description(panel)
@@ -126,16 +111,11 @@ class PanelGenerator:
                 metadata={
                     'prompt': prompt,
                     'enhanced_description': enhanced_desc,
-                    'style_hash': self.consistency_manager.get_style_hash(),
-                    'cache_key': cache_key,
                 }
             )
             
             # Register with consistency manager
             self.consistency_manager.register_panel(generated_panel)
-            
-            # Cache the result
-            await self.cache.set(cache_key, self._serialize_panel(generated_panel))
             
             # Update statistics
             self.stats['panels_generated'] += 1
@@ -204,6 +184,217 @@ class PanelGenerator:
         
         return generated_panels
     
+    def set_debug_output_dir(self, debug_dir: str):
+        """Set the debug output directory for this session.
+        
+        Args:
+            debug_dir: Directory to save debug output
+        """
+        from pathlib import Path
+        self.debug_output_dir = Path(debug_dir) if debug_dir else None
+        if self.debug_output_dir:
+            self.debug_output_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Debug output enabled: {self.debug_output_dir}")
+    
+    async def generate_page_with_references(
+        self,
+        page: Page,
+        previous_pages: Optional[List[GeneratedPanel]] = None
+    ) -> List[GeneratedPanel]:
+        """Generate a page using progressive reference sheets.
+        
+        This method builds the page incrementally, using a comprehensive
+        reference sheet that includes the page-in-progress and all character/location
+        references to maintain consistency.
+        
+        Args:
+            page: Page containing panels
+            previous_pages: Previously generated panels from other pages
+            
+        Returns:
+            List of generated panels
+        """
+        generated_panels = []
+        page_canvas = Image.new('RGB', (2400, 3600), 'white')
+        
+        # Extract initial references from previous pages
+        if previous_pages:
+            for prev_panel in previous_pages[-6:]:  # Use last 6 panels as references
+                if prev_panel.image_data:
+                    try:
+                        img = Image.open(io.BytesIO(prev_panel.image_data))
+                        panel_metadata = {
+                            'characters': prev_panel.panel.characters if prev_panel.panel else [],
+                            'panel_number': prev_panel.panel.number if prev_panel.panel else 0
+                        }
+                        self.reference_builder.extract_references_from_panel(img, panel_metadata)
+                    except Exception as e:
+                        logger.warning(f"Could not extract references: {e}")
+        
+        # Generate each panel with progressive context
+        for i, panel in enumerate(page.panels):
+            logger.info(f"Generating panel {i+1}/{len(page.panels)} with reference sheet")
+            
+            # Calculate panel position
+            panel_position = self.reference_builder.calculate_panel_position(i, len(page.panels))
+            
+            # Create comprehensive reference sheet
+            reference_sheet = self.reference_builder.create_comprehensive_reference(
+                page_in_progress=page_canvas,
+                target_panel_position=panel_position,
+                panel_number=i + 1,
+                total_panels=len(page.panels)
+            )
+            
+            # Build prompt for this specific panel
+            # Calculate exact panel dimensions
+            panel_width = panel_position[2] - panel_position[0]
+            panel_height = panel_position[3] - panel_position[1]
+            
+            prompt = f"""
+            CRITICAL: Generate EXACTLY ONE SINGLE PANEL IMAGE.
+            
+            EXACT DIMENSIONS REQUIRED: {panel_width}x{panel_height} pixels
+            This is panel {i+1} of {len(page.panels)} for this page.
+            
+            PANEL CONTENT TO ILLUSTRATE:
+            {getattr(panel, 'raw_text', panel.description)}
+            
+            STRICT REQUIREMENTS:
+            1. Generate EXACTLY ONE rectangular panel image of EXACTLY {panel_width}x{panel_height} pixels
+            2. DO NOT create multiple panels or subdivide the image
+            3. ALL text elements (captions, speech bubbles, thought bubbles) MUST be INSIDE the panel boundaries
+            4. Captions should be rectangular boxes at the top or bottom INSIDE the panel
+            5. Speech bubbles should be INSIDE the panel area, not extending beyond edges
+            6. This is a SINGLE SCENE/MOMENT in time
+            7. Fill the ENTIRE {panel_width}x{panel_height} area with the illustration
+            8. The artwork should extend to the edges - no white borders
+            
+            The reference image shows the page layout and style to match.
+            The RED RECTANGLE shows where this single panel will be placed.
+            
+            OUTPUT: One complete rectangular comic panel of EXACTLY {panel_width}x{panel_height} pixels with ALL text elements contained within.
+            """
+            
+            # Save debug files if debug directory specified
+            if self.debug_output_dir:
+                # Save the reference sheet
+                ref_sheet_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_reference_sheet.png"
+                ref_sheet_img = Image.open(io.BytesIO(reference_sheet))
+                ref_sheet_img.save(ref_sheet_path)
+                logger.debug(f"Saved reference sheet to {ref_sheet_path}")
+                
+                # Save the prompt
+                prompt_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_prompt.txt"
+                with open(prompt_path, 'w') as f:
+                    f.write(prompt)
+                logger.debug(f"Saved prompt to {prompt_path}")
+                
+                # Save the page state before this panel
+                page_state_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_page_before.png"
+                page_canvas.save(page_state_path)
+                logger.debug(f"Saved page state to {page_state_path}")
+            
+            try:
+                # Generate panel with reference sheet
+                panel_image_data = await self.rate_limiter.execute_with_retry(
+                    self.client.generate_panel_image,
+                    prompt,
+                    [reference_sheet],  # Use reference sheet as context
+                    self._get_style_config()
+                )
+                
+                # Convert generated panel to image
+                panel_img = Image.open(io.BytesIO(panel_image_data))
+                
+                # Ensure exact dimensions without distortion
+                target_width = panel_position[2] - panel_position[0]
+                target_height = panel_position[3] - panel_position[1]
+                
+                # If the image isn't exactly the right size, resize to fit while maintaining aspect ratio,
+                # then crop or pad to exact dimensions
+                if panel_img.size != (target_width, target_height):
+                    # Calculate scale to fit
+                    scale_x = target_width / panel_img.width
+                    scale_y = target_height / panel_img.height
+                    scale = max(scale_x, scale_y)  # Use max to ensure we cover the full area
+                    
+                    # Resize maintaining aspect ratio
+                    new_width = int(panel_img.width * scale)
+                    new_height = int(panel_img.height * scale)
+                    panel_img = panel_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Crop to exact size (center crop)
+                    if new_width > target_width or new_height > target_height:
+                        left = (new_width - target_width) // 2
+                        top = (new_height - target_height) // 2
+                        panel_img = panel_img.crop((left, top, left + target_width, top + target_height))
+                    
+                    # Pad if needed (shouldn't happen with max scale)
+                    if panel_img.size != (target_width, target_height):
+                        padded = Image.new('RGB', (target_width, target_height), 'white')
+                        x = (target_width - panel_img.width) // 2
+                        y = (target_height - panel_img.height) // 2
+                        padded.paste(panel_img, (x, y))
+                        panel_img = padded
+                
+                # Add panel to page canvas
+                page_canvas.paste(panel_img, (panel_position[0], panel_position[1]))
+                
+                # Save debug output if specified
+                if self.debug_output_dir:
+                    # Save the generated panel
+                    panel_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_generated.png"
+                    panel_img.save(panel_path)
+                    logger.debug(f"Saved generated panel to {panel_path}")
+                    
+                    # Save the page state after adding this panel
+                    page_after_path = self.debug_output_dir / f"page_{page.number}_panel_{i+1}_page_after.png"
+                    page_canvas.save(page_after_path)
+                    logger.debug(f"Saved page state after panel to {page_after_path}")
+                
+                # Update reference builder with new panel
+                self.reference_builder.update_page_state(page_canvas)
+                
+                # Extract any new references from this panel
+                panel_metadata = {
+                    'characters': panel.characters if panel.characters else [],
+                    'panel_number': panel.number,
+                    'location': getattr(panel, 'location', None)
+                }
+                self.reference_builder.extract_references_from_panel(panel_img, panel_metadata)
+                
+                # Create GeneratedPanel object
+                generated_panel = GeneratedPanel(
+                    panel=panel,
+                    image_data=panel_image_data,
+                    generation_time=0,  # We'd track this properly
+                    metadata={
+                        'prompt': prompt,
+                        'used_reference_sheet': True,
+                        'panel_position': panel_position
+                    }
+                )
+                
+                generated_panels.append(generated_panel)
+                
+                # Register with consistency manager
+                self.consistency_manager.register_panel(generated_panel)
+                
+                logger.info(f"Successfully generated panel {i+1}")
+                
+            except Exception as e:
+                logger.error(f"Error generating panel {i+1}: {e}")
+                # Add placeholder panel on error
+                generated_panels.append(GeneratedPanel(
+                    panel=panel,
+                    image_data=b"",
+                    generation_time=0,
+                    metadata={'error': str(e)}
+                ))
+        
+        return generated_panels
+    
     async def initialize_characters(
         self,
         character_names: List[str],
@@ -250,10 +441,8 @@ class PanelGenerator:
         # Calculate averages
         if stats['panels_generated'] > 0:
             stats['avg_generation_time'] = stats['total_time'] / stats['panels_generated']
-            stats['cache_hit_rate'] = stats['cache_hits'] / (stats['panels_generated'] + stats['cache_hits'])
         else:
             stats['avg_generation_time'] = 0
-            stats['cache_hit_rate'] = 0
         
         return stats
     
@@ -261,8 +450,7 @@ class PanelGenerator:
         """Reset generation statistics."""
         self.stats = {
             'panels_generated': 0,
-            'cache_hits': 0,
-            'api_calls': 0,
+                        'api_calls': 0,
             'total_time': 0.0,
             'errors': 0,
         }
@@ -291,26 +479,6 @@ class PanelGenerator:
             logger.warning(f"Failed to enhance description: {e}")
             return panel.description
     
-    def _generate_cache_key(self, panel: Panel) -> str:
-        """Generate cache key for panel.
-        
-        Args:
-            panel: Panel to generate key for
-            
-        Returns:
-            Cache key string
-        """
-        # Include panel details and style in cache key
-        key_data = {
-            'panel_number': panel.number,
-            'description': panel.description,
-            'dialogue': [d.text for d in panel.dialogue],
-            'captions': [c.text for c in panel.captions],
-            'style_hash': self.consistency_manager.get_style_hash(),
-        }
-        
-        key_string = json.dumps(key_data, sort_keys=True)
-        return hashlib.sha256(key_string.encode()).hexdigest()
     
     def _get_style_config(self) -> Optional[Dict[str, Any]]:
         """Get style configuration dictionary.
@@ -328,36 +496,3 @@ class PanelGenerator:
             }
         return None
     
-    def _serialize_panel(self, panel: GeneratedPanel) -> Dict[str, Any]:
-        """Serialize panel for caching.
-        
-        Args:
-            panel: Panel to serialize
-            
-        Returns:
-            Serialized panel data
-        """
-        return {
-            'panel_number': panel.panel.number if panel.panel else 0,
-            'image_data': panel.image_data.hex() if panel.image_data else "",
-            'generation_time': panel.generation_time,
-            'metadata': panel.metadata,
-        }
-    
-    def _deserialize_panel(self, data: Dict[str, Any]) -> GeneratedPanel:
-        """Deserialize panel from cache.
-        
-        Args:
-            data: Serialized panel data
-            
-        Returns:
-            Deserialized panel
-        """
-        # Note: We lose the original Panel object in serialization
-        # This is acceptable for cache hits as we mainly need the image
-        return GeneratedPanel(
-            panel=None,  # Panel reference lost in serialization
-            image_data=bytes.fromhex(data['image_data']) if data.get('image_data') else b"",
-            generation_time=data.get('generation_time', 0),
-            metadata=data.get('metadata', {})
-        )

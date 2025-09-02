@@ -44,7 +44,6 @@ class OutputConfig:
 @dataclass
 class PerformanceConfig:
     """Performance configuration settings."""
-    cache_enabled: bool = True
     max_workers: int = 4
     batch_size: int = 10
 
@@ -61,7 +60,6 @@ class Config:
     # Runtime configuration
     api_key: Optional[str] = None
     max_concurrent_requests: int = 4
-    cache_dir: str = ".cache"
     output_dir: str = "./output"
     debug: bool = False
     log_level: str = "INFO"
@@ -144,10 +142,6 @@ class ConfigLoader:
         if env_max_concurrent := os.getenv('MAX_CONCURRENT_REQUESTS'):
             config.max_concurrent_requests = int(env_max_concurrent)
             
-        if env_cache_enabled := os.getenv('CACHE_ENABLED'):
-            config.performance.cache_enabled = env_cache_enabled.lower() == 'true'
-            
-        config.cache_dir = os.getenv('CACHE_DIR', config.cache_dir)
         
         # Output settings
         config.output_dir = os.getenv('DEFAULT_OUTPUT_DIR', config.output_dir)

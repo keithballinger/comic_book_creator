@@ -1,0 +1,13 @@
+Title: Text Rendering Test
+
+PAGE 1
+
+Panel 1
+Setting: A character in a library looking at an ancient book
+Character: I have discovered something absolutely incredible in these ancient texts that will change everything we know about magic!
+Caption: Meanwhile, in the depths of the forgotten library, secrets awaited discovery by those brave enough to seek them.
+
+Panel 2  
+Setting: The character excitedly points to text in the book
+Character: Look at this! The spell requires exactly thirteen drops of moonwater, three phoenix feathers, and one crystallized dragon tear to be effective.
+SFX: MAGICAL SPARKLE!

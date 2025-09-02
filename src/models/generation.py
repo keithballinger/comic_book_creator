@@ -3,7 +3,6 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
-import hashlib
 
 
 @dataclass
@@ -46,22 +45,17 @@ class GeneratedPanel:
                 "image_size": len(self.image_data) if self.image_data else 0,
                 "generation_time_seconds": self.generation_time,
             }
-    
-    def get_cache_key(self) -> str:
-        """Generate a cache key for this panel."""
-        # Create a unique key based on panel description and metadata
-        key_data = f"{self.panel.number}_{self.panel.description}"
-        return hashlib.sha256(key_data.encode()).hexdigest()
 
 
 @dataclass
 class GeneratedPage:
-    """A generated comic page with composed panels."""
+    """A generated comic page."""
     page: Any  # Page from script.py
-    panels: List[GeneratedPanel]
-    composed_image: Optional[bytes] = None
+    panels: List[GeneratedPanel]  # Empty for single-pass generation
+    image_data: Optional[bytes] = None  # Complete page image for single-pass
+    composed_image: Optional[bytes] = None  # Legacy: for multi-panel composition
     composition_time: float = 0.0
-    generation_time: float = 0.0  # Total time to generate all panels
+    generation_time: float = 0.0  # Total time to generate page
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
@@ -77,6 +71,10 @@ class GeneratedPage:
     
     def is_complete(self) -> bool:
         """Check if page generation is complete."""
+        # For single-pass generation, check if we have the image_data
+        if self.image_data:
+            return True
+        # For legacy multi-panel generation
         return (
             len(self.panels) == len(self.page.panels) and
             all(p.image_data for p in self.panels) and
@@ -130,10 +128,8 @@ class ProcessingOptions:
     style_override: Optional[str] = None  # Custom style override
     quality: str = "high"
     export_formats: List[str] = field(default_factory=lambda: ["png"])
-    cache_enabled: bool = True
-    skip_cache: bool = False  # Force regeneration
     parallel_generation: bool = False  # Generate panels in parallel
-    render_text: bool = True  # Whether to render text on panels
+    # Text rendering removed - Gemini handles all text
     debug_mode: bool = False
     
     def __post_init__(self):

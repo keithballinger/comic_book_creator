@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional
 import logging
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
+from PIL import Image
+from io import BytesIO
 
 from src.models import Panel, CharacterReference
 
@@ -61,7 +64,27 @@ class GeminiClient:
             }
             
             # Build contents for the request
-            contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
+            # If we have reference images, include them in the request
+            if reference_images:
+                import base64
+                # Build multimodal content with images and text
+                parts = []
+                # Add reference images first
+                for ref_image in reference_images:
+                    parts.append({
+                        'inline_data': {
+                            'data': base64.b64encode(ref_image).decode('utf-8'),
+                            'mime_type': 'image/png'
+                        }
+                    })
+                # Add the text prompt
+                parts.append({
+                    'text': f"Generate a comic book panel image based on this description:\n{full_prompt}"
+                })
+                contents = [{'parts': parts}]
+            else:
+                # Just text prompt if no references
+                contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
             
             response = await loop.run_in_executor(
                 None,
@@ -89,6 +112,90 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"Error generating panel image: {e}")
             raise
+    
+    async def generate_page_image(
+        self,
+        prompt: str,
+        context_images: Optional[List[Image.Image]] = None,
+        style_config: Optional[Dict[str, Any]] = None
+    ) -> bytes:
+        """Generate a complete comic page in a single pass.
+        
+        Args:
+            prompt: Detailed prompt describing the entire page
+            context_images: Previous page images for context (PIL Images)
+            style_config: Style configuration dictionary
+            
+        Returns:
+            Generated page image as bytes
+        """
+        try:
+            # Build contents list for multimodal input
+            contents = []
+            
+            # Add previous pages as context
+            if context_images:
+                for img in context_images:
+                    # PIL Images are directly supported by the new API
+                    contents.append(img)
+                    logger.debug(f"Added context image: {img.size}")
+            
+            # Add style configuration to prompt if provided
+            full_prompt = prompt
+            if style_config:
+                style_instructions = self._build_style_prompt(style_config)
+                full_prompt = f"{style_instructions}\n\n{prompt}"
+            
+            # Add the text prompt
+            contents.append(full_prompt)
+            
+            logger.info("Calling Gemini API for page generation")
+            
+            # Use the new genai.Client API
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash-image-preview",
+                contents=contents
+            )
+            
+            # Extract generated image from response
+            if response.candidates:
+                for candidate in response.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                if hasattr(part.inline_data, 'data'):
+                                    logger.info("Successfully generated page image")
+                                    return part.inline_data.data
+            
+            raise ValueError("No image generated from API")
+            
+        except Exception as e:
+            logger.error(f"Error generating page image: {e}")
+            raise
+    
+    def _build_style_prompt(self, style_config: Dict[str, Any]) -> str:
+        """Build style instructions from configuration.
+        
+        Args:
+            style_config: Style configuration dictionary
+            
+        Returns:
+            Style prompt string
+        """
+        parts = []
+        
+        if 'style' in style_config:
+            parts.append(f"Art style: {style_config['style']} comic book style")
+        
+        if 'quality' in style_config:
+            quality_map = {
+                'draft': 'Quick sketch quality',
+                'standard': 'Professional comic book quality',
+                'high': 'Highly detailed premium comic book quality'
+            }
+            parts.append(quality_map.get(style_config['quality'], 'Professional quality'))
+        
+        return "\n".join(parts) if parts else ""
     
     async def enhance_panel_description(
         self, 
@@ -235,12 +342,24 @@ class GeminiClient:
             if 'shading' in style_config:
                 prompt_parts.append(f"Shading: {style_config['shading']}")
         
+        # Add strict single panel instruction
+        prompt_parts.append("\n⚠️ CRITICAL: Generate EXACTLY ONE SINGLE PANEL - not multiple panels, not a grid, just ONE rectangular image.")
+        
         # Add base prompt
-        prompt_parts.append("\nPanel description:")
+        prompt_parts.append("\nCreate a single comic book panel with the following:")
         prompt_parts.append(base_prompt)
         
+        # Add instructions for text rendering
+        prompt_parts.append("\nIMPORTANT TEXT PLACEMENT RULES:")
+        prompt_parts.append("- ALL text elements MUST be INSIDE the panel boundaries")
+        prompt_parts.append("- Captions: Yellow/white rectangular boxes at top or bottom INSIDE the panel")
+        prompt_parts.append("- Speech bubbles: White ovals with tails pointing to speakers, INSIDE the panel")
+        prompt_parts.append("- Thought bubbles: Cloud-shaped bubbles INSIDE the panel")
+        prompt_parts.append("- Sound effects: Stylized text integrated into the artwork")
+        prompt_parts.append("- NO text should extend beyond the panel edges")
+        
         # Add quality instructions
-        prompt_parts.append("\nHigh quality comic book panel, professional artwork, detailed illustration")
+        prompt_parts.append("\nOutput: ONE high-quality comic book panel with exact dimensions, professional artwork, single rectangular illustration with ALL text contained within panel boundaries.")
         
         return "\n".join(prompt_parts)
     
@@ -258,39 +377,30 @@ class GeminiClient:
         Returns:
             Prompt for description enhancement
         """
+        # Simply pass the raw panel text to Gemini for interpretation
         prompt = f"""
-        Enhance this comic book panel description for image generation.
-        Make it more visual, specific, and suitable for AI image generation.
+        Convert this comic book panel script into a detailed visual description for image generation.
         
-        Original Panel {panel.number} description:
-        {panel.description}
+        Panel {panel.number}:
+        {panel.raw_text if hasattr(panel, 'raw_text') else panel.description}
+        
+        Create a visual description that includes:
+        - The scene setting and background
+        - Character positions and expressions
+        - Any dialogue in speech bubbles (regular bubbles for speech, cloud-shaped for thoughts)
+        - Any captions in rectangular boxes
+        - Any sound effects as stylized text
+        - Camera angle and composition
+        
+        Make the description detailed and visual, suitable for AI image generation.
+        Include ALL text elements (dialogue, captions, sound effects) that should appear in the panel.
         """
         
-        # Add character information if available
+        # Add character references if available
         if character_refs and panel.characters:
-            prompt += "\n\nCharacters in this panel:"
+            prompt += "\n\nCharacter references:"
             for char_name in panel.characters:
                 if char_ref := character_refs.get(char_name):
                     prompt += f"\n- {char_name}: {char_ref.appearance_description}"
-        
-        # Add dialogue context if present
-        if panel.dialogue:
-            prompt += "\n\nDialogue context:"
-            for dialogue in panel.dialogue:
-                prompt += f"\n- {dialogue.character}: '{dialogue.text}'"
-                if dialogue.emotion:
-                    prompt += f" ({dialogue.emotion})"
-        
-        prompt += """
-        
-        Provide an enhanced visual description that includes:
-        - Camera angle and framing
-        - Character positions and expressions
-        - Background details
-        - Lighting and atmosphere
-        - Important visual elements
-        
-        Keep it concise (2-3 sentences) and focus on visual elements.
-        """
         
         return prompt

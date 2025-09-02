@@ -247,7 +247,7 @@ my-comic/
 
 ## License & Attribution
 
-This tool is provided under MIT License. Generated images are subject to Gemini's terms of service and your usage rights.
+This tool is provided under Apache License 2.0. Generated images are subject to Gemini's terms of service and your usage rights.
 
 ---
 
