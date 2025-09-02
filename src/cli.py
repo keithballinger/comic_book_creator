@@ -52,9 +52,8 @@ def cli():
 @click.option('--format', '-f', type=click.Choice(['png', 'pdf', 'cbz']), 
               multiple=True, default=['png'], help='Export formats')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
-@click.option('--mock', is_flag=True, help='Use mock API client (for testing)')
 def generate(script_path, output, config, style, quality, pages, parallel, 
-             no_cache, no_text, format, verbose, mock):
+             no_cache, no_text, format, verbose):
     """Generate a comic from a script file."""
     
     # Set logging level
@@ -122,30 +121,8 @@ def generate(script_path, output, config, style, quality, pages, parallel,
     # Create pipeline
     console.print("[yellow]Initializing processing pipeline...[/yellow]")
     try:
-        # Use mock client if requested
-        panel_generator = None
-        if mock:
-            console.print("[yellow]Using MOCK mode - no API calls will be made[/yellow]")
-            from src.api.mock_client import MockGeminiClient
-            from src.generator import PanelGenerator, ConsistencyManager
-            from src.processor.cache_manager import CacheManager
-            from src.api import RateLimiter
-            
-            mock_client = MockGeminiClient()
-            consistency_manager = ConsistencyManager()
-            cache_manager = CacheManager(cache_dir=".cache")
-            rate_limiter = RateLimiter(calls_per_minute=60)
-            
-            panel_generator = PanelGenerator(
-                gemini_client=mock_client,
-                consistency_manager=consistency_manager,
-                cache_manager=cache_manager,
-                rate_limiter=rate_limiter
-            )
-        
         pipeline = ProcessingPipeline(
             config=config_loader,
-            panel_generator=panel_generator,
             output_dir=output
         )
         console.print("[green]✓[/green] Pipeline initialized")
