@@ -20,6 +20,5 @@ output:
   dpi: 300
 
 performance:
-  cache_enabled: true
   max_workers: 4
   batch_size: 10
