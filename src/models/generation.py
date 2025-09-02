@@ -3,7 +3,6 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
-import hashlib
 
 
 @dataclass
@@ -46,12 +45,6 @@ class GeneratedPanel:
                 "image_size": len(self.image_data) if self.image_data else 0,
                 "generation_time_seconds": self.generation_time,
             }
-    
-    def get_cache_key(self) -> str:
-        """Generate a cache key for this panel."""
-        # Create a unique key based on panel description and metadata
-        key_data = f"{self.panel.number}_{self.panel.description}"
-        return hashlib.sha256(key_data.encode()).hexdigest()
 
 
 @dataclass
@@ -130,8 +123,6 @@ class ProcessingOptions:
     style_override: Optional[str] = None  # Custom style override
     quality: str = "high"
     export_formats: List[str] = field(default_factory=lambda: ["png"])
-    cache_enabled: bool = True
-    skip_cache: bool = False  # Force regeneration
     parallel_generation: bool = False  # Generate panels in parallel
     render_text: bool = True  # Whether to render text on panels
     debug_mode: bool = False

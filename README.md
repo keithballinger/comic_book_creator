@@ -10,7 +10,6 @@ Transform comic book scripts into fully illustrated comics using AI-powered imag
 - **Text Rendering**: Overlay dialogue balloons, captions, and sound effects on panels
 - **Page Composition**: Automatically arrange panels into professional comic page layouts
 - **Multiple Styles**: Support for various art styles (comic, manga, graphic novel, etc.)
-- **Caching System**: Smart caching to avoid regenerating panels
 - **CLI Interface**: Rich command-line interface with progress tracking
 
 ## Installation
@@ -41,7 +40,7 @@ python comic_creator.py validate red_comet.txt
 
 2. **Generate a comic**:
 ```bash
-python comic_creator.py generate red_comet.txt -o output/
+python comic_creator.py generate example/superpowers/superpowers.txt -o output/superpowers/
 ```
 
 3. **Initialize a new project**:
@@ -87,7 +86,6 @@ Options:
   -q, --quality [draft|standard|high]  Output quality
   -p, --pages TEXT            Page range (e.g., 1-3)
   --parallel/--sequential     Parallel panel generation
-  --no-cache                  Skip cache and regenerate
   --no-text                   Skip text rendering
   -f, --format [png|pdf|cbz]  Export formats
   -v, --verbose               Verbose output
@@ -132,11 +130,6 @@ generation:
 
 api:
   rate_limit: 30
-
-cache:
-  directory: .cache
-  max_size_mb: 500
-  ttl_hours: 24
 
 output:
   formats:

@@ -80,6 +80,7 @@ class Panel:
     captions: List[Caption] = field(default_factory=list)
     sound_effects: List[SoundEffect] = field(default_factory=list)
     characters: List[str] = field(default_factory=list)
+    raw_text: Optional[str] = None  # Raw text from the script
     
     def __post_init__(self):
         """Validate panel data."""

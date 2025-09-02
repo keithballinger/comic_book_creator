@@ -1,11 +1,9 @@
 """Panel generator for creating comic book panels."""
 
 import asyncio
-import hashlib
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-import json
 
 from src.api import GeminiClient, RateLimiter
 from src.generator.consistency import ConsistencyManager
@@ -16,7 +14,6 @@ from src.models import (
     CharacterReference,
     StyleConfig,
 )
-from src.processor.cache_manager import CacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +25,6 @@ class PanelGenerator:
         self,
         gemini_client: Optional[GeminiClient] = None,
         consistency_manager: Optional[ConsistencyManager] = None,
-        cache_manager: Optional[CacheManager] = None,
         rate_limiter: Optional[RateLimiter] = None
     ):
         """Initialize panel generator.
@@ -41,14 +37,12 @@ class PanelGenerator:
         """
         self.client = gemini_client or GeminiClient()
         self.consistency_manager = consistency_manager or ConsistencyManager()
-        self.cache = cache_manager or CacheManager()
         self.rate_limiter = rate_limiter or RateLimiter(calls_per_minute=30)
         
         # Track generation statistics
         self.stats = {
             'panels_generated': 0,
-            'cache_hits': 0,
-            'api_calls': 0,
+                        'api_calls': 0,
             'total_time': 0.0,
             'errors': 0,
         }
@@ -58,7 +52,6 @@ class PanelGenerator:
         panel: Panel,
         page_context: Optional[Page] = None,
         previous_panels: Optional[List[GeneratedPanel]] = None,
-        skip_cache: bool = False
     ) -> GeneratedPanel:
         """Generate a single panel with consistency.
         
@@ -66,8 +59,6 @@ class PanelGenerator:
             panel: Panel to generate
             page_context: Page containing the panel
             previous_panels: Previously generated panels
-            skip_cache: Skip cache lookup
-            
         Returns:
             Generated panel with image data
         """
@@ -75,18 +66,7 @@ class PanelGenerator:
         start_time = time.time()
         
         try:
-            # Generate cache key
-            cache_key = self._generate_cache_key(panel)
-            
-            # Check cache first unless skipped
-            if not skip_cache:
-                cached = await self.cache.get(cache_key)
-                if cached:
-                    logger.info(f"Cache hit for panel {panel.number}")
-                    self.stats['cache_hits'] += 1
-                    
-                    # Deserialize cached panel
-                    return self._deserialize_panel(cached)
+            # No caching - removed
             
             # Enhance description with context
             enhanced_desc = await self._enhance_description(panel)
@@ -126,16 +106,11 @@ class PanelGenerator:
                 metadata={
                     'prompt': prompt,
                     'enhanced_description': enhanced_desc,
-                    'style_hash': self.consistency_manager.get_style_hash(),
-                    'cache_key': cache_key,
                 }
             )
             
             # Register with consistency manager
             self.consistency_manager.register_panel(generated_panel)
-            
-            # Cache the result
-            await self.cache.set(cache_key, self._serialize_panel(generated_panel))
             
             # Update statistics
             self.stats['panels_generated'] += 1
@@ -250,10 +225,8 @@ class PanelGenerator:
         # Calculate averages
         if stats['panels_generated'] > 0:
             stats['avg_generation_time'] = stats['total_time'] / stats['panels_generated']
-            stats['cache_hit_rate'] = stats['cache_hits'] / (stats['panels_generated'] + stats['cache_hits'])
         else:
             stats['avg_generation_time'] = 0
-            stats['cache_hit_rate'] = 0
         
         return stats
     
@@ -261,8 +234,7 @@ class PanelGenerator:
         """Reset generation statistics."""
         self.stats = {
             'panels_generated': 0,
-            'cache_hits': 0,
-            'api_calls': 0,
+                        'api_calls': 0,
             'total_time': 0.0,
             'errors': 0,
         }
@@ -291,26 +263,6 @@ class PanelGenerator:
             logger.warning(f"Failed to enhance description: {e}")
             return panel.description
     
-    def _generate_cache_key(self, panel: Panel) -> str:
-        """Generate cache key for panel.
-        
-        Args:
-            panel: Panel to generate key for
-            
-        Returns:
-            Cache key string
-        """
-        # Include panel details and style in cache key
-        key_data = {
-            'panel_number': panel.number,
-            'description': panel.description,
-            'dialogue': [d.text for d in panel.dialogue],
-            'captions': [c.text for c in panel.captions],
-            'style_hash': self.consistency_manager.get_style_hash(),
-        }
-        
-        key_string = json.dumps(key_data, sort_keys=True)
-        return hashlib.sha256(key_string.encode()).hexdigest()
     
     def _get_style_config(self) -> Optional[Dict[str, Any]]:
         """Get style configuration dictionary.
@@ -328,36 +280,3 @@ class PanelGenerator:
             }
         return None
     
-    def _serialize_panel(self, panel: GeneratedPanel) -> Dict[str, Any]:
-        """Serialize panel for caching.
-        
-        Args:
-            panel: Panel to serialize
-            
-        Returns:
-            Serialized panel data
-        """
-        return {
-            'panel_number': panel.panel.number if panel.panel else 0,
-            'image_data': panel.image_data.hex() if panel.image_data else "",
-            'generation_time': panel.generation_time,
-            'metadata': panel.metadata,
-        }
-    
-    def _deserialize_panel(self, data: Dict[str, Any]) -> GeneratedPanel:
-        """Deserialize panel from cache.
-        
-        Args:
-            data: Serialized panel data
-            
-        Returns:
-            Deserialized panel
-        """
-        # Note: We lose the original Panel object in serialization
-        # This is acceptable for cache hits as we mainly need the image
-        return GeneratedPanel(
-            panel=None,  # Panel reference lost in serialization
-            image_data=bytes.fromhex(data['image_data']) if data.get('image_data') else b"",
-            generation_time=data.get('generation_time', 0),
-            metadata=data.get('metadata', {})
-        )

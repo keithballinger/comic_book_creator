@@ -239,7 +239,6 @@ class ProcessingPipeline:
             panel,
             page,
             previous_panels,
-            skip_cache=options.skip_cache
         )
         
         # Apply text rendering if enabled
@@ -263,14 +262,10 @@ class ProcessingPipeline:
             options: Processing options
         """
         from src.generator import ConsistencyManager
-        from src.processor.cache_manager import CacheManager
         
         # Create components
         client = GeminiClient(api_key=self.config.api_key)
         consistency_manager = ConsistencyManager()
-        cache_manager = CacheManager(
-            cache_dir=self.config.cache_dir
-        )
         rate_limiter = RateLimiter(
             calls_per_minute=self.config.max_concurrent_requests * 10  # Approximate rate limit
         )
@@ -279,7 +274,6 @@ class ProcessingPipeline:
         self.panel_generator = PanelGenerator(
             gemini_client=client,
             consistency_manager=consistency_manager,
-            cache_manager=cache_manager,
             rate_limiter=rate_limiter
         )
         

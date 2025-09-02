@@ -78,7 +78,28 @@ class ScriptParser:
             if self._is_panel_marker(line):
                 panel_num = self._parse_panel_marker(line)
                 self._start_new_panel(panel_num)
-                i += 1
+                # Collect all raw text for this panel
+                raw_panel_lines = []
+                j = i + 1
+                while j < len(lines):
+                    next_line = lines[j].strip()
+                    if not next_line:
+                        j += 1
+                        continue
+                    if self._is_panel_marker(next_line) or self._is_page_marker(next_line):
+                        break
+                    raw_panel_lines.append(lines[j])  # Keep original formatting
+                    j += 1
+                
+                # Store raw text on the panel
+                if self.current_panel:
+                    self.current_panel.raw_text = '\n'.join(raw_panel_lines)
+                    # Also parse the first non-empty line as description
+                    for raw_line in raw_panel_lines:
+                        if raw_line.strip() and not self._is_dialogue(raw_line.strip()) and not self._is_caption(raw_line.strip()) and not self._is_sfx(raw_line.strip()):
+                            self.current_panel.description = raw_line.strip()
+                            break
+                i = j
                 continue
                 
             # Parse panel content
@@ -172,18 +193,32 @@ class ScriptParser:
     
     def _is_dialogue(self, line: str) -> bool:
         """Check if line is dialogue."""
-        # Match patterns like "CHARACTER (balloon):" or "CHARACTER (thought):"
-        return bool(re.match(r'^[A-Z][A-Z\s]+\s*\((balloon|thought|whisper|shout)\)\s*:', line))
+        # Match patterns like "CHARACTER:" or "CHARACTER (Thought Bubble):" etc.
+        # Basic pattern: uppercase name followed by colon
+        if re.match(r'^[A-Z][A-Z\s]+\s*:', line):
+            return True
+        # Pattern with parentheses: "CHARACTER (anything):"
+        return bool(re.match(r'^[A-Z][A-Z\s]+\s*\([^)]+\)\s*:', line))
     
     def _parse_dialogue(self, line: str) -> Tuple[str, str, bool]:
         """Parse dialogue line into character, text, and whether it's a thought."""
-        match = re.match(r'^([A-Z][A-Z\s]+)\s*\((balloon|thought|whisper|shout)\)\s*:\s*(.+)', line)
+        # Try to match dialogue with parentheses modifier
+        match = re.match(r'^([A-Z][A-Z\s]+)\s*\(([^)]+)\)\s*:\s*(.+)', line)
         if match:
             character = match.group(1).strip()
-            dialogue_type = match.group(2)
+            dialogue_type = match.group(2).lower()
             text = match.group(3).strip()
-            is_thought = dialogue_type == "thought"
+            # Check if it's a thought bubble or thought
+            is_thought = 'thought' in dialogue_type
             return character, text, is_thought
+        
+        # Try to match simple dialogue without parentheses
+        match = re.match(r'^([A-Z][A-Z\s]+)\s*:\s*(.+)', line)
+        if match:
+            character = match.group(1).strip()
+            text = match.group(2).strip()
+            return character, text, False
+            
         return "", "", False
     
     def _is_caption(self, line: str) -> bool:

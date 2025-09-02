@@ -236,11 +236,14 @@ class GeminiClient:
                 prompt_parts.append(f"Shading: {style_config['shading']}")
         
         # Add base prompt
-        prompt_parts.append("\nPanel description:")
+        prompt_parts.append("\nCreate a comic book panel with the following:")
         prompt_parts.append(base_prompt)
         
+        # Add instructions for text rendering
+        prompt_parts.append("\nIMPORTANT: Include all specified dialogue in speech bubbles, thoughts in thought bubbles (cloud-shaped), captions in rectangular caption boxes (typically at top or bottom), and sound effects as stylized text.")
+        
         # Add quality instructions
-        prompt_parts.append("\nHigh quality comic book panel, professional artwork, detailed illustration")
+        prompt_parts.append("\nHigh quality comic book panel, professional artwork, detailed illustration with proper text rendering")
         
         return "\n".join(prompt_parts)
     
@@ -258,39 +261,30 @@ class GeminiClient:
         Returns:
             Prompt for description enhancement
         """
+        # Simply pass the raw panel text to Gemini for interpretation
         prompt = f"""
-        Enhance this comic book panel description for image generation.
-        Make it more visual, specific, and suitable for AI image generation.
+        Convert this comic book panel script into a detailed visual description for image generation.
         
-        Original Panel {panel.number} description:
-        {panel.description}
+        Panel {panel.number}:
+        {panel.raw_text if hasattr(panel, 'raw_text') else panel.description}
+        
+        Create a visual description that includes:
+        - The scene setting and background
+        - Character positions and expressions
+        - Any dialogue in speech bubbles (regular bubbles for speech, cloud-shaped for thoughts)
+        - Any captions in rectangular boxes
+        - Any sound effects as stylized text
+        - Camera angle and composition
+        
+        Make the description detailed and visual, suitable for AI image generation.
+        Include ALL text elements (dialogue, captions, sound effects) that should appear in the panel.
         """
         
-        # Add character information if available
+        # Add character references if available
         if character_refs and panel.characters:
-            prompt += "\n\nCharacters in this panel:"
+            prompt += "\n\nCharacter references:"
             for char_name in panel.characters:
                 if char_ref := character_refs.get(char_name):
                     prompt += f"\n- {char_name}: {char_ref.appearance_description}"
-        
-        # Add dialogue context if present
-        if panel.dialogue:
-            prompt += "\n\nDialogue context:"
-            for dialogue in panel.dialogue:
-                prompt += f"\n- {dialogue.character}: '{dialogue.text}'"
-                if dialogue.emotion:
-                    prompt += f" ({dialogue.emotion})"
-        
-        prompt += """
-        
-        Provide an enhanced visual description that includes:
-        - Camera angle and framing
-        - Character positions and expressions
-        - Background details
-        - Lighting and atmosphere
-        - Important visual elements
-        
-        Keep it concise (2-3 sentences) and focus on visual elements.
-        """
         
         return prompt
