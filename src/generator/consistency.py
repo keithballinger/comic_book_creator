@@ -123,10 +123,11 @@ class ConsistencyManager:
             panel = generated_panel.panel
             
             # Track characters
-            for character in panel.characters:
-                if character not in self.visual_elements.get('characters', {}):
-                    self.visual_elements.setdefault('characters', {})[character] = []
-                self.visual_elements['characters'][character].append(generated_panel)
+            if panel.characters:
+                for character in panel.characters:
+                    if character not in self.visual_elements.get('characters', {}):
+                        self.visual_elements.setdefault('characters', {})[character] = []
+                    self.visual_elements['characters'][character].append(generated_panel)
         
         logger.debug(f"Panel registered: {len(self.panel_history)} total panels")
     

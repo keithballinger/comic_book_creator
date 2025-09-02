@@ -244,7 +244,7 @@ class PanelGenerator:
             - The RED RECTANGLE shows where this panel should be placed
             
             Panel {i+1} content:
-            {panel.raw_text if hasattr(panel, 'raw_text') else panel.description}
+            {getattr(panel, 'raw_text', panel.description)}
             
             CRITICAL INSTRUCTIONS:
             1. Generate ONLY the content for the red-outlined panel area
@@ -281,7 +281,7 @@ class PanelGenerator:
                 
                 # Extract any new references from this panel
                 panel_metadata = {
-                    'characters': panel.characters,
+                    'characters': panel.characters if panel.characters else [],
                     'panel_number': panel.number,
                     'location': getattr(panel, 'location', None)
                 }

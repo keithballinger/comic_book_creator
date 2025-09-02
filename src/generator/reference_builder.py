@@ -269,7 +269,7 @@ class ReferenceSheetBuilder:
         # For now, we'll store the whole panel as potential reference
         
         # Extract characters mentioned in this panel
-        if 'characters' in panel_data:
+        if 'characters' in panel_data and panel_data['characters']:
             for char in panel_data['characters']:
                 # Check if we already have this character
                 if not any(ref.name == char for ref in self.character_refs):
@@ -280,7 +280,7 @@ class ReferenceSheetBuilder:
                     })
         
         # Similar for locations and props
-        if 'location' in panel_data:
+        if 'location' in panel_data and panel_data['location']:
             location = panel_data['location']
             if not any(ref.name == location for ref in self.location_refs):
                 self.add_location_reference(location, panel_image, {
