@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Any
 from src.api import GeminiClient, RateLimiter
 from src.generator.consistency import ConsistencyManager
 from src.generator.reference_builder import ReferenceSheetBuilder
+from src.references.manager import ReferenceManager
 from PIL import Image
 import io
 from src.models import (
@@ -28,20 +29,22 @@ class PanelGenerator:
         self,
         gemini_client: Optional[GeminiClient] = None,
         consistency_manager: Optional[ConsistencyManager] = None,
-        rate_limiter: Optional[RateLimiter] = None
+        rate_limiter: Optional[RateLimiter] = None,
+        reference_manager: Optional[ReferenceManager] = None
     ):
         """Initialize panel generator.
         
         Args:
             gemini_client: Gemini API client
             consistency_manager: Consistency manager
-            cache_manager: Cache manager for storing results
             rate_limiter: Rate limiter for API calls
+            reference_manager: Reference manager for character/location consistency
         """
         self.client = gemini_client or GeminiClient()
         self.consistency_manager = consistency_manager or ConsistencyManager()
         self.rate_limiter = rate_limiter or RateLimiter(calls_per_minute=30)
         self.reference_builder = ReferenceSheetBuilder()
+        self.reference_manager = reference_manager  # May be None if not using references
         self.debug_output_dir = None  # Will be set per session
         
         # Track generation statistics
@@ -394,6 +397,207 @@ class PanelGenerator:
                 ))
         
         return generated_panels
+    
+    def _extract_references_from_text(self, text: str) -> Dict[str, List[str]]:
+        """Extract reference names from panel text.
+        
+        Args:
+            text: Panel description or dialogue text
+            
+        Returns:
+            Dictionary of reference types to names found
+        """
+        if not self.reference_manager:
+            return {}
+        
+        # Use reference manager to find references in text
+        return self.reference_manager.find_references_in_text(text)
+    
+    def _get_reference_images(
+        self,
+        panel: Panel,
+        characters: Optional[List[str]] = None,
+        locations: Optional[List[str]] = None,
+        objects: Optional[List[str]] = None
+    ) -> List[Image.Image]:
+        """Get reference images for the panel.
+        
+        Args:
+            panel: Panel being generated
+            characters: Character names to include
+            locations: Location names to include
+            objects: Object names to include
+            
+        Returns:
+            List of PIL Images to use as references
+        """
+        if not self.reference_manager:
+            return []
+        
+        reference_images = []
+        
+        # Get character images
+        if characters:
+            char_images = self.reference_manager.get_character_images(characters)
+            for char_name, images in char_images.items():
+                for key, image_data in images.items():
+                    try:
+                        img = Image.open(io.BytesIO(image_data))
+                        reference_images.append(img)
+                    except Exception as e:
+                        logger.warning(f"Could not load reference image for {char_name}/{key}: {e}")
+        
+        # Get location images
+        if locations:
+            for loc_name in locations:
+                loc = self.reference_manager.get_reference("location", loc_name)
+                if loc and hasattr(loc, 'images'):
+                    for key, filename in loc.images.items():
+                        try:
+                            image_data = self.reference_manager.storage.load_reference_image(
+                                "location", loc_name, filename
+                            )
+                            img = Image.open(io.BytesIO(image_data))
+                            reference_images.append(img)
+                        except Exception as e:
+                            logger.warning(f"Could not load location image {loc_name}/{key}: {e}")
+        
+        # Get object images
+        if objects:
+            for obj_name in objects:
+                obj = self.reference_manager.get_reference("object", obj_name)
+                if obj and hasattr(obj, 'images'):
+                    for key, filename in obj.images.items():
+                        try:
+                            image_data = self.reference_manager.storage.load_reference_image(
+                                "object", obj_name, filename
+                            )
+                            img = Image.open(io.BytesIO(image_data))
+                            reference_images.append(img)
+                        except Exception as e:
+                            logger.warning(f"Could not load object image {obj_name}/{key}: {e}")
+        
+        return reference_images
+    
+    async def generate_panel_with_references(
+        self,
+        panel: Panel,
+        page_context: Optional[Page] = None,
+        previous_panels: Optional[List[GeneratedPanel]] = None,
+    ) -> GeneratedPanel:
+        """Generate a panel using reference images from the reference manager.
+        
+        Args:
+            panel: Panel to generate
+            page_context: Page containing the panel
+            previous_panels: Previously generated panels
+            
+        Returns:
+            Generated panel with image data
+        """
+        import time
+        start_time = time.time()
+        
+        try:
+            # Extract references from panel text
+            panel_text = getattr(panel, 'raw_text', panel.description)
+            found_refs = self._extract_references_from_text(panel_text)
+            
+            # Get reference images
+            ref_images = self._get_reference_images(
+                panel,
+                characters=found_refs.get('character', []),
+                locations=found_refs.get('location', []),
+                objects=found_refs.get('object', [])
+            )
+            
+            # Get style guide if available
+            style_guide = None
+            if self.reference_manager:
+                style_guides = self.reference_manager.list_references('styleguide')
+                if style_guides.get('styleguide'):
+                    # Use first style guide found
+                    style_name = style_guides['styleguide'][0]
+                    style_guide = self.reference_manager.get_reference('styleguide', style_name)
+            
+            # Build enhanced prompt with references
+            enhanced_desc = await self._enhance_description(panel)
+            
+            # Add reference context to prompt
+            if found_refs:
+                enhanced_desc += "\n\nREFERENCE CONTEXT:"
+                if found_refs.get('character'):
+                    enhanced_desc += f"\nCharacters: {', '.join(found_refs['character'])}"
+                if found_refs.get('location'):
+                    enhanced_desc += f"\nLocations: {', '.join(found_refs['location'])}"
+                if found_refs.get('object'):
+                    enhanced_desc += f"\nObjects: {', '.join(found_refs['object'])}"
+            
+            if style_guide:
+                enhanced_desc += f"\n\nSTYLE: {style_guide.art_style}"
+                if style_guide.color_palette:
+                    enhanced_desc += f"\nColors: {', '.join(style_guide.color_palette)}"
+            
+            # Build consistent prompt
+            prompt = self.consistency_manager.build_consistent_prompt(
+                enhanced_desc,
+                previous_panels
+            )
+            
+            # Combine reference images with consistency images
+            consistency_images = self.consistency_manager.get_reference_images(
+                previous_panels,
+                panel.characters
+            )
+            
+            all_ref_images = ref_images + consistency_images
+            
+            # Get style configuration
+            style_config = self._get_style_config()
+            
+            # Generate image with rate limiting
+            logger.info(f"Generating panel {panel.number} with {len(ref_images)} reference images")
+            image_data = await self.rate_limiter.execute_with_retry(
+                self.client.generate_panel_image,
+                prompt,
+                all_ref_images,
+                style_config
+            )
+            
+            # Update statistics
+            self.stats['panels_generated'] += 1
+            self.stats['api_calls'] += 1
+            self.stats['total_time'] += time.time() - start_time
+            
+            # Create GeneratedPanel object
+            generated_panel = GeneratedPanel(
+                panel=panel,
+                image_data=image_data,
+                generation_time=time.time() - start_time,
+                metadata={
+                    'prompt': prompt,
+                    'used_references': bool(ref_images),
+                    'reference_count': len(ref_images),
+                    'found_references': found_refs
+                }
+            )
+            
+            # Register with consistency manager
+            self.consistency_manager.register_panel(generated_panel)
+            
+            logger.info(f"Successfully generated panel {panel.number}")
+            return generated_panel
+            
+        except Exception as e:
+            logger.error(f"Error generating panel {panel.number}: {e}")
+            self.stats['errors'] += 1
+            # Return error panel
+            return GeneratedPanel(
+                panel=panel,
+                image_data=b"",
+                generation_time=time.time() - start_time,
+                metadata={'error': str(e)}
+            )
     
     async def initialize_characters(
         self,

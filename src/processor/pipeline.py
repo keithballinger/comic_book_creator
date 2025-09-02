@@ -21,6 +21,8 @@ from src.generator import PanelGenerator
 # TextRenderer removed - Gemini handles all text
 from src.api import GeminiClient, RateLimiter
 from src.config import ConfigLoader
+from src.references.manager import ReferenceManager
+from src.references.storage import ReferenceStorage
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,9 @@ class ProcessingPipeline:
         self,
         config: Optional[ConfigLoader] = None,
         panel_generator: Optional[PanelGenerator] = None,
-        output_dir: str = "output"
+        output_dir: str = "output",
+        reference_manager: Optional[ReferenceManager] = None,
+        use_references: bool = True
     ):
         """Initialize processing pipeline.
         
@@ -40,10 +44,42 @@ class ProcessingPipeline:
             config: Configuration loader
             panel_generator: Panel generator instance
             output_dir: Output directory for generated comics
+            reference_manager: Reference manager for consistent characters/locations
+            use_references: Whether to use reference system
         """
         self.config_loader = config or ConfigLoader()
         self.config = self.config_loader.load()  # Load the actual config
+        
+        # Setup reference manager if enabled
+        self.use_references = use_references
+        self.reference_manager = reference_manager
+        if use_references and not reference_manager:
+            # Create default reference manager
+            storage = ReferenceStorage(Path(output_dir) / "references")
+            # Check if we have Gemini API key for generation
+            api_key = self.config.get('gemini_api_key')
+            if api_key:
+                gemini_client = GeminiClient(api_key=api_key)
+                self.reference_manager = ReferenceManager(
+                    storage=storage,
+                    gemini_client=gemini_client
+                )
+            else:
+                self.reference_manager = ReferenceManager(storage=storage)
+        
+        # Setup panel generator with reference manager
         self.panel_generator = panel_generator
+        if not self.panel_generator:
+            from src.generator.consistency import ConsistencyManager
+            self.panel_generator = PanelGenerator(
+                gemini_client=GeminiClient(api_key=self.config.get('gemini_api_key')),
+                consistency_manager=ConsistencyManager(),
+                reference_manager=self.reference_manager
+            )
+        elif self.reference_manager and not self.panel_generator.reference_manager:
+            # Add reference manager to existing panel generator
+            self.panel_generator.reference_manager = self.reference_manager
+        
         # TextRenderer removed - Gemini handles all text
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -189,12 +225,23 @@ class ProcessingPipeline:
             for prev_page in previous_pages[-2:]:  # Use last 2 pages for context
                 previous_panels.extend(prev_page.panels)
         
-        # Generate panels using reference-based approach for better consistency
-        # Always use the new reference-based generation method
-        generated_panels = await self.panel_generator.generate_page_with_references(
-            page,
-            previous_panels
-        )
+        # Generate panels using appropriate method
+        if self.use_references and self.reference_manager:
+            # Use our new reference manager integration
+            generated_panels = []
+            for panel in page.panels:
+                generated_panel = await self.panel_generator.generate_panel_with_references(
+                    panel,
+                    page,
+                    previous_panels + generated_panels  # Include panels from current page
+                )
+                generated_panels.append(generated_panel)
+        else:
+            # Use the existing reference-based generation method
+            generated_panels = await self.panel_generator.generate_page_with_references(
+                page,
+                previous_panels
+            )
         
         # TextRenderer removed - Gemini handles all text
         
