@@ -41,8 +41,7 @@ print_error() {
 generate_comic() {
     local script_file="$1"
     local output_name="$2"
-    local use_references="$3"
-    local description="$4"
+    local description="$3"
     
     print_status "Generating: ${description}"
     echo "  Script: ${script_file}"
@@ -57,10 +56,8 @@ generate_comic() {
     # Build command
     local cmd="$PYTHON_CMD -m comic_creator generate \"$script_file\" --output \"${OUTPUT_DIR}/${output_name}\""
     
-    # Add references flag if requested
-    if [ "$use_references" = "true" ]; then
-        cmd="$cmd --use-references"
-    fi
+    # Note: References are used automatically if they exist in the reference storage
+    # No need for a separate flag
     
     # Execute generation
     echo "  Command: $cmd"
@@ -181,7 +178,6 @@ generate_all_examples() {
     generate_comic \
         "$SCRIPT_DIR/superpowers/superpowers.txt" \
         "superpowers" \
-        "false" \
         "Original Superpowers Example - Kid discovers comic creation tool"
     
     # Genre examples
@@ -190,25 +186,21 @@ generate_all_examples() {
     generate_comic \
         "$SCRIPT_DIR/genres/superhero/hero_rises.txt" \
         "superhero_hero_rises" \
-        "false" \
         "Superhero Origin Story - Hero gets powers from cosmic meteor"
     
     generate_comic \
         "$SCRIPT_DIR/genres/noir/dark_city.txt" \
         "noir_dark_city" \
-        "false" \
         "Noir Detective Story - Detective investigates in shadowy city"
     
     generate_comic \
         "$SCRIPT_DIR/genres/scifi/space_station.txt" \
         "scifi_space_station" \
-        "false" \
         "Sci-Fi First Contact - Aliens arrive at space station"
     
     generate_comic \
         "$SCRIPT_DIR/genres/slice_of_life/coffee_shop.txt" \
         "slice_of_life_coffee_shop" \
-        "false" \
         "Slice of Life - Quiet birthday moment in coffee shop"
     
     # Length examples
@@ -217,28 +209,54 @@ generate_all_examples() {
     generate_comic \
         "$SCRIPT_DIR/lengths/single_page/one_page_wonder.txt" \
         "single_page_last_second" \
-        "false" \
         "Single Page Story - New Year's reconciliation in 9 panels"
+    
+    # Additional genre examples
+    print_status "=== Additional Genre Examples ==="
+    
+    generate_comic \
+        "$SCRIPT_DIR/genres/fantasy/dragon_quest.txt" \
+        "fantasy_dragon_quest" \
+        "Fantasy Adventure - Dragon and village partnership"
+    
+    generate_comic \
+        "$SCRIPT_DIR/genres/horror/midnight_visitor.txt" \
+        "horror_midnight_visitor" \
+        "Psychological Horror - Ghost story with a twist"
+    
+    # Length variations
+    print_status "=== Length Variation Examples ==="
+    
+    generate_comic \
+        "$SCRIPT_DIR/lengths/full_issue/time_loop.txt" \
+        "full_issue_time_loop" \
+        "Full Issue (22 pages) - Quantum time loop adventure"
+    
+    generate_comic \
+        "$SCRIPT_DIR/lengths/short_story/robot_heart.txt" \
+        "short_story_robot_heart" \
+        "Short Story (8 pages) - Robot gains emotions"
     
     # Reference examples (these work better with references but will work without)
     print_status "=== Reference Examples ==="
     
     generate_comic \
         "$SCRIPT_DIR/references/with_characters/consistent_hero.txt" \
-        "reference_consistent_hero_no_refs" \
-        "false" \
-        "Character Consistency (without references)"
+        "reference_consistent_hero" \
+        "Character Consistency Example"
     
-    # If references exist, generate with them
-    if $PYTHON_CMD -m comic_creator reference exists character "Captain Nova" 2>/dev/null; then
-        generate_comic \
-            "$SCRIPT_DIR/references/with_characters/consistent_hero.txt" \
-            "reference_consistent_hero_with_refs" \
-            "true" \
-            "Character Consistency (with references)"
-    else
-        print_warning "Skipping reference-enabled example (no character references found)"
-    fi
+    generate_comic \
+        "$SCRIPT_DIR/references/with_locations/mystic_library.txt" \
+        "reference_mystic_library" \
+        "Location Consistency - Magical library between dimensions"
+    
+    generate_comic \
+        "$SCRIPT_DIR/references/with_style/manga_transformation.txt" \
+        "reference_manga_style" \
+        "Style Guide Example - Manga/anime aesthetic"
+    
+    # Note: The system automatically uses references if they exist
+    # No separate generation with/without references needed
 }
 
 # Function to display results

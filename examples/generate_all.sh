@@ -29,36 +29,53 @@ cd "$(dirname "$0")/.."
 
 # Create output directory
 mkdir -p examples/generated_examples
-cd examples
 
-# Generate each example
+# Generate each example (run from project root)
 echo "📚 Generating Superpowers (original example)..."
-$PYTHON_CMD -m comic_creator generate superpowers/superpowers.txt --output generated_examples/superpowers
+$PYTHON_CMD -m comic_creator generate examples/superpowers/superpowers.txt --output examples/generated_examples/superpowers
 
 echo "🦸 Generating Hero Rises (superhero)..."
-$PYTHON_CMD -m comic_creator generate genres/superhero/hero_rises.txt --output generated_examples/hero_rises
+$PYTHON_CMD -m comic_creator generate examples/genres/superhero/hero_rises.txt --output examples/generated_examples/hero_rises
 
 echo "🕵️ Generating Dark City (noir)..."
-$PYTHON_CMD -m comic_creator generate genres/noir/dark_city.txt --output generated_examples/dark_city
+$PYTHON_CMD -m comic_creator generate examples/genres/noir/dark_city.txt --output examples/generated_examples/dark_city
 
 echo "🚀 Generating Space Station (sci-fi)..."
-$PYTHON_CMD -m comic_creator generate genres/scifi/space_station.txt --output generated_examples/space_station
+$PYTHON_CMD -m comic_creator generate examples/genres/scifi/space_station.txt --output examples/generated_examples/space_station
 
 echo "☕ Generating Coffee Shop (slice of life)..."
-$PYTHON_CMD -m comic_creator generate genres/slice_of_life/coffee_shop.txt --output generated_examples/coffee_shop
+$PYTHON_CMD -m comic_creator generate examples/genres/slice_of_life/coffee_shop.txt --output examples/generated_examples/coffee_shop
 
 echo "⏱️ Generating One Page Wonder (single page)..."
-$PYTHON_CMD -m comic_creator generate lengths/single_page/one_page_wonder.txt --output generated_examples/one_page_wonder
+$PYTHON_CMD -m comic_creator generate examples/lengths/single_page/one_page_wonder.txt --output examples/generated_examples/one_page_wonder
 
 echo "🎯 Generating Consistent Hero (reference example)..."
-$PYTHON_CMD -m comic_creator generate references/with_characters/consistent_hero.txt --output generated_examples/consistent_hero
+$PYTHON_CMD -m comic_creator generate examples/references/with_characters/consistent_hero.txt --output examples/generated_examples/consistent_hero
+
+echo "🐉 Generating Dragon Quest (fantasy)..."
+$PYTHON_CMD -m comic_creator generate examples/genres/fantasy/dragon_quest.txt --output examples/generated_examples/dragon_quest
+
+echo "👻 Generating Midnight Visitor (horror)..."
+$PYTHON_CMD -m comic_creator generate examples/genres/horror/midnight_visitor.txt --output examples/generated_examples/midnight_visitor
+
+echo "⏰ Generating Time Loop (full issue)..."
+$PYTHON_CMD -m comic_creator generate examples/lengths/full_issue/time_loop.txt --output examples/generated_examples/time_loop
+
+echo "🤖 Generating Robot Heart (short story)..."
+$PYTHON_CMD -m comic_creator generate examples/lengths/short_story/robot_heart.txt --output examples/generated_examples/robot_heart
+
+echo "📚 Generating Mystic Library (location reference)..."
+$PYTHON_CMD -m comic_creator generate examples/references/with_locations/mystic_library.txt --output examples/generated_examples/mystic_library
+
+echo "🎌 Generating Manga Transformation (style reference)..."
+$PYTHON_CMD -m comic_creator generate examples/references/with_style/manga_transformation.txt --output examples/generated_examples/manga_transformation
 
 echo ""
 echo "✅ All examples generated!"
 echo "📁 Check the examples/generated_examples/ directory for your comics"
 echo ""
 echo "Generated comics:"
-cd generated_examples
+cd examples/generated_examples
 for dir in */; do
     if [ -d "$dir" ]; then
         pages=$(find "$dir" -name "page_*.png" 2>/dev/null | wc -l | tr -d ' ')

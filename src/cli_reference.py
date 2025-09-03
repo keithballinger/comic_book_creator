@@ -57,8 +57,9 @@ def create_character(name, description, poses, expressions, age, traits, style, 
         
         if generate:
             # Setup Gemini client for generation
-            config = ConfigLoader()
-            client = GeminiClient(api_key=config.get('gemini_api_key'))
+            config_loader = ConfigLoader()
+            config = config_loader.load()
+            client = GeminiClient(api_key=config.api_key)
             manager = ReferenceManager(storage=storage, gemini_client=client)
         else:
             manager = ReferenceManager(storage=storage)
@@ -159,8 +160,9 @@ def create_location(name, description, type, angles, lighting, time, style, outp
         storage = ReferenceStorage(output)
         
         if generate:
-            config = ConfigLoader()
-            client = GeminiClient(api_key=config.get('gemini_api_key'))
+            config_loader = ConfigLoader()
+            config = config_loader.load()
+            client = GeminiClient(api_key=config.api_key)
             manager = ReferenceManager(storage=storage, gemini_client=client)
         else:
             manager = ReferenceManager(storage=storage)
@@ -255,8 +257,9 @@ def create_object(name, description, category, views, states, style, output, gen
         storage = ReferenceStorage(output)
         
         if generate:
-            config = ConfigLoader()
-            client = GeminiClient(api_key=config.get('gemini_api_key'))
+            config_loader = ConfigLoader()
+            config = config_loader.load()
+            client = GeminiClient(api_key=config.api_key)
             manager = ReferenceManager(storage=storage, gemini_client=client)
         else:
             manager = ReferenceManager(storage=storage)
@@ -542,6 +545,28 @@ def delete(ref_type, name, storage, force):
     except Exception as e:
         console.print(f"[red]✗[/red] Failed to delete reference: {e}")
         raise click.Abort()
+
+
+@reference.command()
+@click.argument('ref_type', type=click.Choice(['character', 'location', 'object', 'styleguide']))
+@click.argument('name')
+@click.option('--storage', '-s', default='references', help='Storage directory')
+def exists(ref_type, name, storage):
+    """Check if a reference exists."""
+    try:
+        # Setup storage
+        storage_obj = ReferenceStorage(storage)
+        
+        # Check existence
+        if storage_obj.exists(ref_type, name):
+            console.print(f"[green]✓[/green] {ref_type.title()} '{name}' exists")
+            return 0
+        else:
+            console.print(f"[yellow]✗[/yellow] {ref_type.title()} '{name}' does not exist")
+            return 1
+    except Exception as e:
+        console.print(f"[red]✗[/red] Error checking reference: {e}")
+        return 2
 
 
 @reference.command()

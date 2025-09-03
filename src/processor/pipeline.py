@@ -57,7 +57,7 @@ class ProcessingPipeline:
             # Create default reference manager
             storage = ReferenceStorage(Path(output_dir) / "references")
             # Check if we have Gemini API key for generation
-            api_key = self.config.get('gemini_api_key')
+            api_key = self.config.api_key
             if api_key:
                 gemini_client = GeminiClient(api_key=api_key)
                 self.reference_manager = ReferenceManager(
@@ -72,7 +72,7 @@ class ProcessingPipeline:
         if not self.panel_generator:
             from src.generator.consistency import ConsistencyManager
             self.panel_generator = PanelGenerator(
-                gemini_client=GeminiClient(api_key=self.config.get('gemini_api_key')),
+                gemini_client=GeminiClient(api_key=self.config.api_key),
                 consistency_manager=ConsistencyManager(),
                 reference_manager=self.reference_manager
             )

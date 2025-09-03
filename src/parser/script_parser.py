@@ -55,9 +55,13 @@ class ScriptParser:
         self.script = ComicScript()
         
         # Parse title if present
-        if lines and lines[0].startswith('Title:'):
-            self.script.title = lines[0].replace('Title:', '').strip()
-            lines = lines[1:]
+        if lines:
+            if lines[0].startswith('Title:'):
+                self.script.title = lines[0].replace('Title:', '').strip()
+                lines = lines[1:]
+            elif lines[0].startswith('COMIC SCRIPT:'):
+                self.script.title = lines[0].replace('COMIC SCRIPT:', '').strip()
+                lines = lines[1:]
         
         i = 0
         while i < len(lines):
@@ -156,7 +160,7 @@ class ScriptParser:
     
     def _is_page_marker(self, line: str) -> bool:
         """Check if line is a page marker."""
-        return bool(re.match(r'^PAGE\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|\d+)', line.upper()))
+        return bool(re.match(r'^PAGE\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|THIRTEEN|FOURTEEN|FIFTEEN|SIXTEEN|SEVENTEEN|EIGHTEEN|NINETEEN|TWENTY|TWENTY-ONE|TWENTY-TWO|\d+)', line.upper()))
     
     def _parse_page_marker(self, line: str) -> Tuple[int, Optional[int]]:
         """Parse page number and optional panel count from page marker."""
@@ -164,10 +168,14 @@ class ScriptParser:
         word_to_num = {
             'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 
             'FIVE': 5, 'SIX': 6, 'SEVEN': 7, 'EIGHT': 8,
-            'NINE': 9, 'TEN': 10
+            'NINE': 9, 'TEN': 10, 'ELEVEN': 11, 'TWELVE': 12,
+            'THIRTEEN': 13, 'FOURTEEN': 14, 'FIFTEEN': 15,
+            'SIXTEEN': 16, 'SEVENTEEN': 17, 'EIGHTEEN': 18,
+            'NINETEEN': 19, 'TWENTY': 20, 'TWENTY-ONE': 21,
+            'TWENTY-TWO': 22
         }
         
-        match = re.match(r'^PAGE\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|\d+)(?:\s*\((\d+)\s*PANELS?\))?', line.upper())
+        match = re.match(r'^PAGE\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|THIRTEEN|FOURTEEN|FIFTEEN|SIXTEEN|SEVENTEEN|EIGHTEEN|NINETEEN|TWENTY|TWENTY-ONE|TWENTY-TWO|\d+)(?:\s*\((\d+)\s*PANELS?\))?', line.upper())
         if match:
             page_part = match.group(1)
             panel_count = int(match.group(2)) if match.group(2) else None
