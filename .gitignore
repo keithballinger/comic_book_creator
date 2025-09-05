@@ -65,7 +65,7 @@ env/
 
 # Project specific
 .env
-output/
+/output/
 *.png
 *.pdf
 *.cbz
