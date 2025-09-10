@@ -1,0 +1,62 @@
+# Composition and Framing Tests
+# Explore different camera angles and compositions for comic panels
+
+name: "Panel Composition Tests"
+description: "Test various compositions and camera angles for comic book panels"
+
+prompt: |
+  Create a comic book panel showing {action} from a {camera_angle} angle.
+  Use {composition_type} composition.
+  Focus on {focus_element}.
+  Panel style: {panel_style}.
+  Include {text_element}.
+
+variables:
+  action:
+    - "a superhero landing"
+    - "two characters in conversation"
+    - "an explosion"
+    - "a character running"
+    - "a dramatic reveal"
+  
+  camera_angle:
+    - "low angle (hero shot)"
+    - "high angle (bird's eye)"
+    - "dutch angle (tilted)"
+    - "eye level"
+    - "extreme close-up"
+  
+  composition_type:
+    - "rule of thirds"
+    - "centered"
+    - "diagonal"
+    - "symmetrical"
+    - "golden ratio"
+  
+  focus_element:
+    - "character expression"
+    - "action movement"
+    - "environmental detail"
+    - "dramatic lighting"
+  
+  panel_style:
+    - "traditional rectangular"
+    - "dynamic angular"
+    - "circular vignette"
+    - "split panel"
+  
+  text_element:
+    - "speech bubble with 'This ends now!'"
+    - "thought bubble with '...'"
+    - "caption box with narration"
+    - "sound effect 'BOOM!'"
+    - "no text"
+
+settings:
+  quality: high
+  iterations: 8
+
+image_settings:
+  width: 1024
+  height: 1024
+  model: "gemini-2.5-flash-image-preview"

@@ -1,0 +1,27 @@
+# Simple Test Example
+# A minimal example for testing the reference experiments feature
+
+name: "Simple Style Test"
+description: "A simple test with few variables for quick testing"
+
+prompt: | 
+  Style: {style} Human's level of detail is medium, not super detailed.
+  Setting: A futuristic solarpunk city that is sunny and bright and invokes optimism and nostalgia in equal parts.  
+  The scene:   
+    The top of a skyscraper. The skyscraper is not the tallest, nor the shortest.  
+    A man sits on a park bench, reading Sylvia Plath's The Bell Jar. He is wearing a sleeveless white t-shirt. He has wired white in-ear headphones, presumably connected to his phone in his pocket. His hair is perfect. 
+    A young lady his age is walking behind him, looking up into the sky."
+
+variables:
+  style:
+    - "10% pixar-style, 50% B&W movies from the 1940s and 1950s, and 20% Van Goth-style painting style, 20% modern Marvel/DC comic-book visual style."
+    - "10% pixar-style, 30% B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 50% modern Marvel/DC comic-book visual style."
+    - "10% B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 80% modern Marvel/DC comic-book visual style."
+
+settings:
+  quality: medium
+  iterations: 3
+
+image_settings:
+  width: 512
+  height: 512

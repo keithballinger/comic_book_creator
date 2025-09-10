@@ -1,4 +1,4 @@
-.PHONY: install test build clean run lint format dev-install
+.PHONY: install test build clean run lint format dev-install test-refexp run-refexp
 
 # Virtual environment directory
 VENV = venv
@@ -16,13 +16,19 @@ dev-install: install
 	$(PIP) install -e .
 
 test: install
-	$(PYTHON) -m pytest tests/ -v --cov=src --cov-report=term-missing
+	GEMINI_API_KEY=test-key $(PYTHON) -m pytest tests/ -v --cov=src --cov-report=term-missing
+
+test-refexp: install
+	GEMINI_API_KEY=test-key $(PYTHON) -m pytest tests/test_refexp/ -v
 
 build: install
 	$(PYTHON) -m py_compile src/**/*.py
 
 run: install
 	$(PYTHON) -m src.cli
+
+run-refexp: install
+	$(PYTHON) comic_creator.py ref-exp examples/reference_experiments/simple_test.yaml --iterations 2
 
 lint: install
 	$(PYTHON) -m ruff check src/
@@ -40,9 +46,11 @@ clean:
 	rm -rf .mypy_cache
 	rm -rf .ruff_cache
 	rm -rf .cache
+	rm -rf output/reference_experiments/session_*
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.bak" -delete
 
 # Development helpers
 shell: install

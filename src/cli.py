@@ -18,6 +18,7 @@ from src.processor.pipeline import ProcessingPipeline
 from src.output import PageCompositor
 from src.models import ProcessingOptions, StyleConfig
 from src.cli_reference import reference
+from src.cli_refexp import ref_exp
 
 # Setup rich console
 console = Console()
@@ -39,6 +40,8 @@ def cli():
 
 # Add reference commands as a subgroup
 cli.add_command(reference)
+# Add reference experiments command
+cli.add_command(ref_exp)
 
 
 @cli.command()

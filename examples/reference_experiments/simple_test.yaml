@@ -1,0 +1,31 @@
+# Simple Test Example
+# A minimal example for testing the reference experiments feature
+
+name: "Simple Style Test"
+description: "A simple test with few variables for quick testing"
+
+prompt: "Create a {style} portrait of a {subject} with {color} as the primary color."
+
+variables:
+  style:
+    - "realistic"
+    - "cartoon"
+    - "abstract"
+  
+  subject:
+    - "cat"
+    - "robot"
+    - "tree"
+  
+  color:
+    - "blue"
+    - "red"
+    - "green"
+
+settings:
+  quality: medium
+  iterations: 5
+
+image_settings:
+  width: 512
+  height: 512

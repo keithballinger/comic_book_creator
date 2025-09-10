@@ -1,0 +1,55 @@
+# Character Style Variations
+# Test different art styles and emotions for character portraits
+
+name: "Character Style Variations"
+description: "Explore different art styles and emotional expressions for character portraits"
+
+# Prompt template with variable placeholders
+prompt: |
+  Create a {style} style portrait of a {character_type} with {emotion} expression.
+  The character should be facing {direction}.
+  Background should be {background}.
+  High quality, detailed artwork.
+
+# Variable definitions
+variables:
+  style:
+    - "anime"
+    - "realistic"
+    - "comic book"
+    - "watercolor"
+    - "cyberpunk"
+  
+  character_type:
+    - "warrior"
+    - "mage"
+    - "detective"
+    - "scientist"
+  
+  emotion:
+    - "determined"
+    - "mysterious"
+    - "confident"
+    - "thoughtful"
+  
+  direction:
+    - "forward"
+    - "three-quarter view"
+    - "profile"
+  
+  background:
+    - "simple gradient"
+    - "abstract patterns"
+    - "atmospheric environment"
+
+# Optional settings
+settings:
+  quality: high
+  iterations: 10  # Default number of combinations to generate
+  seed: 42  # For reproducible random selection
+
+# Image generation parameters
+image_settings:
+  width: 1024
+  height: 1536
+  model: "gemini-2.5-flash-image-preview"

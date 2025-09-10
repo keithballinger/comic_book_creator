@@ -1,0 +1,53 @@
+# Scene Lighting Experiments
+# Test different lighting conditions and times of day
+
+name: "Scene Lighting Variations"
+description: "Test how different lighting conditions affect scene atmosphere"
+
+prompt: |
+  Create a {scene_type} scene with {lighting} lighting.
+  Time of day: {time_of_day}.
+  Weather: {weather}.
+  The scene should evoke a {mood} mood.
+  Cinematic composition, detailed environment.
+
+variables:
+  scene_type:
+    - "urban cityscape"
+    - "fantasy forest"
+    - "sci-fi laboratory"
+    - "medieval castle"
+  
+  lighting:
+    - "dramatic shadows"
+    - "soft diffused"
+    - "harsh directional"
+    - "neon and artificial"
+    - "candlelit"
+  
+  time_of_day:
+    - "dawn"
+    - "midday"
+    - "golden hour"
+    - "night"
+  
+  weather:
+    - "clear"
+    - "foggy"
+    - "rainy"
+    - "stormy"
+  
+  mood:
+    - "mysterious"
+    - "peaceful"
+    - "tense"
+    - "romantic"
+
+settings:
+  quality: high
+  iterations: 15
+
+image_settings:
+  width: 1536
+  height: 1024
+  model: "gemini-2.5-flash-image-preview"

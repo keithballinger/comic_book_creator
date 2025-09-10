@@ -49,6 +49,19 @@ class PerformanceConfig:
 
 
 @dataclass
+class ReferenceExperimentConfig:
+    """Reference experiment configuration settings."""
+    max_variables: int = 10
+    max_values_per_variable: int = 100
+    max_total_combinations: int = 10000
+    default_iterations: int = 10
+    output_directory: str = "output/reference_experiments"
+    concurrent_generations: int = 3
+    api_rate_limit: int = 10  # requests per minute
+    save_metadata: bool = True
+
+
+@dataclass
 class Config:
     """Main configuration class."""
     style: StyleConfig = field(default_factory=StyleConfig)
@@ -56,6 +69,7 @@ class Config:
     text: TextConfig = field(default_factory=TextConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
     performance: PerformanceConfig = field(default_factory=PerformanceConfig)
+    reference_experiments: ReferenceExperimentConfig = field(default_factory=ReferenceExperimentConfig)
     
     # Runtime configuration
     api_key: Optional[str] = None
@@ -123,6 +137,9 @@ class ConfigLoader:
             
         if 'performance' in yaml_config:
             config.performance = PerformanceConfig(**yaml_config['performance'])
+            
+        if 'reference_experiments' in yaml_config:
+            config.reference_experiments = ReferenceExperimentConfig(**yaml_config['reference_experiments'])
             
         return config
     

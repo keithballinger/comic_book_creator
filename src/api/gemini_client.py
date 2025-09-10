@@ -356,7 +356,6 @@ class GeminiClient:
             # Configure generation
             config = {
                 'response_modalities': ['IMAGE'],
-                'response_mime_type': 'image/png',
             }
             
             # Run API call
@@ -373,11 +372,31 @@ class GeminiClient:
             # Extract image from response
             if response and response.candidates:
                 for candidate in response.candidates:
-                    for part in candidate.content.parts:
-                        if hasattr(part, 'data') and part.mime_type.startswith('image'):
-                            logger.info("Successfully generated image")
-                            return part.data
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            # Debug: log part attributes
+                            logger.debug(f"Part type: {type(part)}, attrs: {dir(part)}")
+                            
+                            # Check for inline_data (base64 encoded image)
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                logger.info("Found inline_data in response")
+                                if hasattr(part.inline_data, 'data'):
+                                    import base64
+                                    image_data = base64.b64decode(part.inline_data.data)
+                                    logger.info("Successfully extracted image from inline_data")
+                                    return image_data
+                            
+                            # Check for direct data attribute
+                            if hasattr(part, 'data'):
+                                if hasattr(part, 'mime_type') and part.mime_type.startswith('image'):
+                                    logger.info("Successfully generated image (direct data)")
+                                    return part.data
+                            
+                            # Check for text response (might be an error or different format)
+                            if hasattr(part, 'text'):
+                                logger.warning(f"Got text response instead of image: {part.text[:200]}")
             
+            logger.error(f"No image found. Response candidates: {len(response.candidates) if response else 0}")
             raise ValueError("No image data in response")
             
         except Exception as e:
