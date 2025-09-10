@@ -4,8 +4,9 @@
 name: "Simple Style Test"
 description: "A simple test with few variables for quick testing"
 
+# Human's level of detail is medium, not super detailed.
 prompt: | 
-  Style: {style} Human's level of detail is medium, not super detailed.
+  Style: {style}.
   Setting: A futuristic solarpunk city that is sunny and bright and invokes optimism and nostalgia in equal parts.  
   The scene:   
     The top of a skyscraper. The skyscraper is not the tallest, nor the shortest.  
@@ -14,10 +15,11 @@ prompt: |
 
 variables:
   style:
-    - "10% pixar-style, 50% B&W movies from the 1940s and 1950s, and 20% Van Goth-style painting style, 20% modern Marvel/DC comic-book visual style."
-    - "10% pixar-style, 30% B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 50% modern Marvel/DC comic-book visual style."
-    - "10% B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 80% modern Marvel/DC comic-book visual style."
-
+    - "60% Photorealistic B&W movies from the 1940s and 1950s, and 20% Van Goth-style painting style, 20% modern Marvel/DC comic-book visual style."
+    - "40% Photorealistic B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 50% modern Marvel/DC comic-book visual style."
+    - "10% Photorealistic B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style, 80% modern Marvel/DC comic-book visual style."
+    - "90% Photorealistic B&W movies from the 1940s and 1950s, and 10% Van Goth-style painting style."
+    
 settings:
   quality: medium
   iterations: 3

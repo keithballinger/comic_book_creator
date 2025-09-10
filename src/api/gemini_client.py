@@ -31,6 +31,80 @@ class GeminiClient:
         self.text_model = 'gemini-2.0-flash-exp'  # Using latest available model
         self.image_model = 'gemini-2.5-flash-image-preview'  # Image generation model
         
+    async def _call_gemini_image_api(
+        self,
+        prompt: str,
+        reference_images: Optional[List[bytes]] = None,
+        config: Optional[Dict[str, Any]] = None
+    ) -> bytes:
+        """Core method to call Gemini image generation API.
+        
+        Args:
+            prompt: Text prompt for image generation
+            reference_images: Optional reference images
+            config: API configuration dict
+            
+        Returns:
+            Generated image data as bytes
+        """
+        import base64
+        
+        # Log the exact prompt being sent
+        logger.info(f"=== GEMINI API PROMPT ===\n{prompt}\n=== END PROMPT ===")
+        
+        # Default config if not provided
+        if config is None:
+            config = {
+                'response_modalities': ['IMAGE', 'TEXT'],
+                'temperature': 0.7,
+                'top_p': 0.95,
+            }
+        
+        # Run synchronous API call in executor to avoid blocking
+        loop = asyncio.get_event_loop()
+        
+        # Build contents for the request
+        if reference_images:
+            # Build multimodal content with images and text
+            parts = []
+            # Add reference images first
+            for ref_image in reference_images:
+                parts.append({
+                    'inline_data': {
+                        'data': base64.b64encode(ref_image).decode('utf-8'),
+                        'mime_type': 'image/png'
+                    }
+                })
+            # Add the text prompt
+            parts.append({'text': prompt})
+            contents = [{'parts': parts}]
+        else:
+            # Just text prompt if no references
+            contents = prompt
+        
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.client.models.generate_content(
+                model=self.image_model,
+                config=config,
+                contents=contents
+            )
+        )
+        
+        # Extract image data from response
+        if response and response.candidates:
+            for candidate in response.candidates:
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        # Check if this part contains image data
+                        if hasattr(part, 'inline_data') and part.inline_data:
+                            # The data is already in bytes format
+                            if hasattr(part.inline_data, 'data'):
+                                return part.inline_data.data
+        
+        # If no image was generated, raise an error
+        raise ValueError("No image generated from API")
+    
     async def generate_panel_image(
         self, 
         prompt: str, 
@@ -48,11 +122,11 @@ class GeminiClient:
             Generated image data as bytes
         """
         try:
-            # Build the full prompt with style information
+            # Build the full prompt with comic panel style information
             full_prompt = self._build_image_prompt(prompt, style_config)
             
-            # Run synchronous API call in executor to avoid blocking
-            loop = asyncio.get_event_loop()
+            # Add comic-specific prefix to prompt
+            comic_prompt = f"Generate a comic book panel image based on this description:\n{full_prompt}"
             
             # Configure for image generation
             config = {
@@ -61,54 +135,60 @@ class GeminiClient:
                 'top_p': 0.95,
             }
             
-            # Build contents for the request
-            # If we have reference images, include them in the request
-            if reference_images:
-                import base64
-                # Build multimodal content with images and text
-                parts = []
-                # Add reference images first
-                for ref_image in reference_images:
-                    parts.append({
-                        'inline_data': {
-                            'data': base64.b64encode(ref_image).decode('utf-8'),
-                            'mime_type': 'image/png'
-                        }
-                    })
-                # Add the text prompt
-                parts.append({
-                    'text': f"Generate a comic book panel image based on this description:\n{full_prompt}"
-                })
-                contents = [{'parts': parts}]
-            else:
-                # Just text prompt if no references
-                contents = f"Generate a comic book panel image based on this description:\n{full_prompt}"
-            
-            response = await loop.run_in_executor(
-                None,
-                lambda: self.client.models.generate_content(
-                    model=self.image_model,
-                    config=config,
-                    contents=contents
-                )
+            # Call the shared API method
+            return await self._call_gemini_image_api(
+                prompt=comic_prompt,
+                reference_images=reference_images,
+                config=config
             )
-            
-            # Extract image data from response
-            if response and response.candidates:
-                for candidate in response.candidates:
-                    if candidate.content and candidate.content.parts:
-                        for part in candidate.content.parts:
-                            # Check if this part contains image data
-                            if hasattr(part, 'inline_data') and part.inline_data:
-                                # The data is already in bytes format
-                                if hasattr(part.inline_data, 'data'):
-                                    return part.inline_data.data
-                            
-            # If no image was generated, raise an error
-            raise ValueError("No image generated from API")
                 
         except Exception as e:
             logger.error(f"Error generating panel image: {e}")
+            raise
+    
+    async def generate_raw_image(
+        self,
+        prompt: str,
+        reference_images: Optional[List[bytes]] = None,
+        style_config: Optional[Dict[str, Any]] = None
+    ) -> bytes:
+        """Generate image without comic-specific styling.
+        
+        Args:
+            prompt: Text prompt for image generation
+            reference_images: Optional reference images
+            style_config: Optional style configuration
+            
+        Returns:
+            Generated image data as bytes
+        """
+        try:
+            # Apply any style config directly to prompt if provided
+            if style_config:
+                style_parts = []
+                if 'quality' in style_config:
+                    style_parts.append(f"Quality: {style_config['quality']}")
+                if 'dimensions' in style_config:
+                    style_parts.append(f"Dimensions: {style_config['dimensions']}")
+                if style_parts:
+                    prompt = f"{prompt}\n{', '.join(style_parts)}"
+            
+            # Configure for image generation
+            config = {
+                'response_modalities': ['IMAGE', 'TEXT'],
+                'temperature': 0.7,
+                'top_p': 0.95,
+            }
+            
+            # Call the shared API method
+            return await self._call_gemini_image_api(
+                prompt=prompt,
+                reference_images=reference_images,
+                config=config
+            )
+            
+        except Exception as e:
+            logger.error(f"Error generating raw image: {e}")
             raise
     
     async def enhance_panel_description(

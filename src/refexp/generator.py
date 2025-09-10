@@ -158,16 +158,14 @@ class RefExpImageGenerator:
             if experiment.settings:
                 quality = experiment.settings.get('quality', quality)
             
-            # Generate image using Gemini API - use generate_panel_image which is working
-            # Note: generate_panel_image doesn't take width/height/quality directly,
-            # but uses style_config for styling
+            # Generate image using Gemini API - use generate_raw_image for non-comic styling
             style_config = {}
             if quality:
                 style_config['quality'] = quality
             if width and height:
                 style_config['dimensions'] = f"{width}x{height}"
             
-            image_data = await self.client.generate_panel_image(
+            image_data = await self.client.generate_raw_image(
                 prompt=combination.prompt,
                 reference_images=None,  # No reference images for experiments
                 style_config=style_config
