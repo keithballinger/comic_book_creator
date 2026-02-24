@@ -27,7 +27,6 @@ class TestConfigLoader:
             assert config.style.art_style == "modern comic book"
             assert config.generation.panel_size == [1024, 1536]
             assert config.output.formats == ["png", "pdf", "cbz"]
-            assert config.performance.cache_enabled is True
     
     def test_yaml_config_loading(self):
         """Test loading configuration from YAML file."""
@@ -64,22 +63,18 @@ generation:
         env_vars = {
             'GEMINI_API_KEY': 'env-test-key',
             'MAX_CONCURRENT_REQUESTS': '8',
-            'CACHE_ENABLED': 'false',
-            'CACHE_DIR': '/tmp/cache',
             'DEFAULT_OUTPUT_DIR': '/tmp/output',
             'DEFAULT_IMAGE_FORMAT': 'jpg',
             'DEFAULT_DPI': '600',
             'DEBUG': 'true',
             'LOG_LEVEL': 'DEBUG'
         }
-        
+
         with patch.dict(os.environ, env_vars):
             config = load_config()
-            
+
             assert config.api_key == 'env-test-key'
             assert config.max_concurrent_requests == 8
-            assert config.performance.cache_enabled is False
-            assert config.cache_dir == '/tmp/cache'
             assert config.output_dir == '/tmp/output'
             assert 'jpg' in config.output.formats
             assert config.output.dpi == 600

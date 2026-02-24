@@ -375,17 +375,22 @@ class TestStorageErrorHandling:
     
     def test_permission_errors(self, temp_storage):
         """Test handling of permission errors."""
+        import os
+        # Skip if running as root (root ignores file permissions)
+        if os.getuid() == 0:
+            pytest.skip("Cannot test permission errors when running as root")
+
         # This test might not work on all systems, so we'll skip if needed
         try:
             # Make directory read-only
             char_dir = temp_storage._type_dirs["character"]
             char_dir.chmod(0o444)
-            
+
             char = CharacterReference(name="Test", description="Test")
-            
+
             with pytest.raises(ReferenceStorageError):
                 temp_storage.save_reference(char)
-        
+
         except (OSError, PermissionError):
             # Skip test if we can't modify permissions
             pytest.skip("Cannot test permission errors on this system")

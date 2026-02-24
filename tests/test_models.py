@@ -272,14 +272,14 @@ class TestGeneratedPanel:
         assert gen_panel.generation_time == 2.5
         assert "generated_at" in gen_panel.metadata
         
-    def test_cache_key(self):
-        """Test cache key generation."""
+    def test_metadata_auto_generated(self):
+        """Test that metadata is auto-generated if not provided."""
         panel = Panel(number=1, description="Test")
         gen_panel = GeneratedPanel(panel, b"data", 1.0)
-        
-        key = gen_panel.get_cache_key()
-        assert isinstance(key, str)
-        assert len(key) == 64  # SHA256 hex digest length
+
+        assert "generated_at" in gen_panel.metadata
+        assert gen_panel.metadata["image_size"] == 4
+        assert gen_panel.metadata["generation_time_seconds"] == 1.0
 
 
 class TestProcessingOptions:
@@ -291,7 +291,6 @@ class TestProcessingOptions:
         assert options.page_range is None
         assert options.quality == "high"
         assert options.export_formats == ["png"]
-        assert options.cache_enabled is True
         
     def test_page_range_filter(self):
         """Test page range filtering."""

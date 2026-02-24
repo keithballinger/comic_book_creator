@@ -500,7 +500,7 @@ class PanelGenerator:
         
         try:
             # Extract references from panel text
-            panel_text = getattr(panel, 'raw_text', panel.description)
+            panel_text = getattr(panel, 'raw_text', None) or panel.description
             found_refs = self._extract_references_from_text(panel_text)
             
             # Get reference images

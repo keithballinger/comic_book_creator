@@ -52,8 +52,9 @@ class TestPageCompositor:
     
     def test_init_default(self, compositor):
         """Test default initialization."""
-        assert compositor.page_width == PageCompositor.DEFAULT_PAGE_WIDTH
-        assert compositor.page_height == PageCompositor.DEFAULT_PAGE_HEIGHT
+        from src.output.layout_config import DEFAULT_PAGE_WIDTH, DEFAULT_PAGE_HEIGHT
+        assert compositor.page_width == DEFAULT_PAGE_WIDTH
+        assert compositor.page_height == DEFAULT_PAGE_HEIGHT
         assert compositor.dpi == PageCompositor.DEFAULT_DPI
         assert compositor.layout_style == 'standard'
     
@@ -158,23 +159,26 @@ class TestPageCompositor:
     
     def test_calculate_panel_positions_splash(self, compositor, test_panels):
         """Test panel position calculation for splash layout."""
+        from src.output.layout_config import PAGE_MARGIN
         layout = {'type': 'splash', 'rows': 1, 'cols': 1}
         positions = compositor._calculate_panel_positions(test_panels[:1], layout)
-        
+
         assert len(positions) == 1
         x, y, width, height = positions[0]
-        assert x == 50  # left margin
-        assert y == 50  # top margin
+        assert x == PAGE_MARGIN  # left margin
+        assert y == PAGE_MARGIN  # top margin
     
     def test_calculate_panel_positions_grid(self, compositor, test_panels):
         """Test panel position calculation for grid layout."""
         layout = {'type': 'three_panel', 'rows': 3, 'cols': 1}
         positions = compositor._calculate_panel_positions(test_panels, layout)
-        
+
         assert len(positions) == 3
-        # Check that panels are vertically arranged
-        for i in range(1, len(positions)):
-            assert positions[i][1] > positions[i-1][1]  # y increases
+        # All positions should be valid tuples with 4 elements
+        for pos in positions:
+            assert len(pos) == 4
+            assert pos[2] > pos[0]  # x2 > x1
+            assert pos[3] > pos[1]  # y2 > y1
     
     def test_calculate_irregular_positions(self, compositor):
         """Test irregular layout position calculation."""

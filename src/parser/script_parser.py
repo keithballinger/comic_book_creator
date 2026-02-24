@@ -95,14 +95,27 @@ class ScriptParser:
                     raw_panel_lines.append(lines[j])  # Keep original formatting
                     j += 1
                 
-                # Store raw text on the panel
+                # Store raw text on the panel and parse structured content
                 if self.current_panel:
                     self.current_panel.raw_text = '\n'.join(raw_panel_lines)
-                    # Also parse the first non-empty line as description
+                    # Parse each line for description, dialogue, captions, and SFX
+                    # Check caption and sfx BEFORE dialogue since CAPTION:/SFX: match dialogue regex
                     for raw_line in raw_panel_lines:
-                        if raw_line.strip() and not self._is_dialogue(raw_line.strip()) and not self._is_caption(raw_line.strip()) and not self._is_sfx(raw_line.strip()):
-                            self.current_panel.description = raw_line.strip()
-                            break
+                        stripped = raw_line.strip()
+                        if not stripped:
+                            continue
+                        if self._is_caption(stripped):
+                            caption_text, caption_type = self._parse_caption(stripped)
+                            self.current_panel.add_caption(caption_text, "top", caption_type)
+                        elif self._is_sfx(stripped):
+                            sfx_text = self._parse_sfx(stripped)
+                            self.current_panel.add_sound_effect(sfx_text)
+                        elif self._is_dialogue(stripped):
+                            character, text, is_thought = self._parse_dialogue(stripped)
+                            emotion = "thoughtful" if is_thought else None
+                            self.current_panel.add_dialogue(character, text, emotion)
+                        elif self.current_panel.description == "[pending]":
+                            self.current_panel.description = stripped
                 i = j
                 continue
                 

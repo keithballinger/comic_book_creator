@@ -386,13 +386,13 @@ def create_style(name, description, art_style, colors, line_style, lighting, out
         raise click.Abort()
 
 
-@reference.command()
+@reference.command('list')
 @click.option('--type', '-t', type=click.Choice(['all', 'character', 'location', 'object', 'styleguide']),
               default='all', help='Reference type to list')
 @click.option('--tags', multiple=True, help='Filter by tags')
 @click.option('--storage', '-s', default='references', help='Storage directory')
 @click.option('--detailed', '-d', is_flag=True, help='Show detailed information')
-def list(type, tags, storage, detailed):
+def list_refs(type, tags, storage, detailed):
     """List available references."""
     try:
         # Setup storage and manager

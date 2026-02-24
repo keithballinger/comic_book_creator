@@ -13,7 +13,7 @@ from src.cli_reference import (
     create_location,
     create_object,
     create_style,
-    list as list_cmd,
+    list_refs as list_cmd,
     update,
     delete,
     cleanup
